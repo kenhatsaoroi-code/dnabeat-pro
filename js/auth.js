@@ -1,4 +1,8 @@
-﻿const cfg = window.DNABEAT_CONFIG;
+// =====================================================================
+// auth.js — Supabase client + Google OAuth helpers.
+// Requires config.js + the Supabase UMD bundle to be loaded first.
+// =====================================================================
+const cfg = window.DNABEAT_CONFIG;
 const sb = window.supabase.createClient(
   cfg.SUPABASE_URL,
   cfg.SUPABASE_ANON_KEY
@@ -29,6 +33,7 @@ const Auth = {
   onChange(cb) {
     sb.auth.onAuthStateChange((_e, session) => cb(session));
   },
+  // Authenticated fetch to our /api/* routes.
   async api(path, options = {}) {
     const token = await this.getToken();
     const headers = Object.assign(
