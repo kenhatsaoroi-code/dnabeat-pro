@@ -18,6 +18,7 @@ const state = {
   busy: false,
   fileBase: "track",
   file: null,
+  clipB642: null,
 };
 
 const STYLE_OPTIONS = [
@@ -125,6 +126,23 @@ function wireUI() {
     if (f) handleFile(f);
   });
 
+  // second dropzone (refine = generated song)
+  const dz2 = $("dropzone2"), fi2 = $("fileInput2");
+  if (dz2 && fi2) {
+    dz2.onclick = () => fi2.click();
+    fi2.onchange = (e) => e.target.files[0] && handleFile2(e.target.files[0]);
+    ["dragover", "dragenter"].forEach((ev) =>
+      dz2.addEventListener(ev, (e) => { e.preventDefault(); dz2.classList.add("drag"); })
+    );
+    ["dragleave", "drop"].forEach((ev) =>
+      dz2.addEventListener(ev, (e) => { e.preventDefault(); dz2.classList.remove("drag"); })
+    );
+    dz2.addEventListener("drop", (e) => {
+      const f = e.dataTransfer.files[0];
+      if (f) handleFile2(f);
+    });
+  }
+
   $("runBtn").onclick = runAnalyze;
 
   // re-apply run label when language flips
@@ -199,6 +217,7 @@ function syncRunLabel() {
 function updateRunState() {
   let ready = !!state.audioBuffer && !state.busy;
   if (state.tab === "variation") ready = ready && state.styles.size > 0;
+  if (state.tab === "refine") ready = ready && !!state.clipB642;
   $("runBtn").disabled = !ready;
 }
 
@@ -220,6 +239,21 @@ async function handleFile(file) {
   state.dsp = computeDSP(audioBuffer);
   renderDSP(state.dsp);
   state.clipB64 = encodeClipBase64(audioBuffer, 60, 16000);
+  updateRunState();
+}
+
+async function handleFile2(file) {
+  $("fileName2").textContent = file.name;
+  try {
+    const buf = await file.arrayBuffer();
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const ab = await ac.decodeAudioData(buf.slice(0));
+    state.clipB642 = encodeClipBase64(ab, 60, 16000);
+    state.hasFile2 = true;
+    toast(I18N.lang === "vi" ? "Đã nạp bản tạo" : "Generated song loaded");
+  } catch (e) {
+    toast("⚠ " + (I18N.lang === "vi" ? "Không đọc được file" : "Could not decode audio"));
+  }
   updateRunState();
 }
 
@@ -462,6 +496,7 @@ async function runAnalyze() {
     lang: I18N.lang,
     dsp: state.dsp,
     audio: state.clipB64 ? { mime: "audio/wav", data: state.clipB64 } : null,
+    audio2: state.tab === "refine" && state.clipB642 ? { mime: "audio/wav", data: state.clipB642 } : undefined,
     context: {
       prompt: state.tab === "refine" ? $("refinePrompt").value : undefined,
       styles: state.tab === "variation" ? Array.from(state.styles) : undefined,
@@ -497,30 +532,65 @@ async function runAnalyze() {
 // ---------------------------------------------------------------------
 // Tab 4 — Timing Lyrics (Whisper -> Gemini, via Supabase Storage)
 // ---------------------------------------------------------------------
+// ---- compress full audio to 16kHz mono WAV Blob (for Timing upload) ----
+// No 60s trim — keeps the whole song. Caps at ~13 min to stay under Whisper's 25MB limit.
+function compressForUpload(ab) {
+  const srcSr = ab.sampleRate;
+  const L = ab.getChannelData(0);
+  const R = ab.numberOfChannels > 1 ? ab.getChannelData(1) : L;
+  const targetSr = 16000;
+  const maxSamples = Math.floor(srcSr * 780); // ~13 min cap
+  const srcLen = Math.min(L.length, maxSamples);
+  const ratio = targetSr / srcSr;
+  const outLen = Math.floor(srcLen * ratio);
+  const out = new Int16Array(outLen);
+  for (let i = 0; i < outLen; i++) {
+    const srcIdx = i / ratio;
+    const i0 = Math.floor(srcIdx), i1 = Math.min(srcLen - 1, i0 + 1);
+    const frac = srcIdx - i0;
+    const m0 = (L[i0] + R[i0]) / 2, m1 = (L[i1] + R[i1]) / 2;
+    let s = m0 + (m1 - m0) * frac;
+    s = Math.max(-1, Math.min(1, s));
+    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+  const buf = new ArrayBuffer(44 + out.length * 2);
+  const v = new DataView(buf);
+  const ws = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+  ws(0, "RIFF"); v.setUint32(4, 36 + out.length * 2, true); ws(8, "WAVE");
+  ws(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, targetSr, true); v.setUint32(28, targetSr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  ws(36, "data"); v.setUint32(40, out.length * 2, true);
+  for (let i = 0; i < out.length; i++) v.setInt16(44 + i * 2, out[i], true);
+  return new Blob([buf], { type: "audio/wav" });
+}
+
 async function runTiming() {
-  if (state.busy || !state.file) return;
+  if (state.busy || !state.audioBuffer) return;
 
   state.busy = true; updateRunState();
   const btn = $("runBtn"), label = $("runLabel").textContent;
   const setStage = (txt) => { btn.innerHTML = `<span class="spinner"></span><span>${txt}</span>`; };
-  setStage(I18N.t("app.upStage"));
+  setStage("Compressing audio...");
 
   try {
-    // 1) upload the audio to the user's own folder in Storage
-    const ext = (state.file.name.split(".").pop() || "mp3").toLowerCase().slice(0, 5);
-    const path = `${state.user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    // 1) compress audio to 16kHz mono WAV (full song, ~2-8MB instead of 42MB)
+    const blob = compressForUpload(state.audioBuffer);
+    setStage(I18N.t("app.upStage"));
+
+    // 2) upload compressed blob to user's folder in Storage
+    const path = `${state.user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.wav`;
     const up = await window.sb.storage
       .from("audio")
-      .upload(path, state.file, { contentType: state.file.type || "audio/mpeg", upsert: false });
+      .upload(path, blob, { contentType: "audio/wav", upsert: false });
     if (up.error) throw new Error(up.error.message);
 
-    // 2) ask the server to run Whisper + Gemini
+    // 3) ask the server to run Whisper + Gemini
     setStage(I18N.t("app.timingStage"));
     const { ok, status, data } = await Auth.api("/api/timing", {
       method: "POST",
       body: JSON.stringify({
         storagePath: path,
-        mime: state.file.type || "audio/mpeg",
+        mime: "audio/wav",
         lang: I18N.lang,
         dsp: state.dsp,
         userLyrics: ($("timingLyrics")?.value || "").trim().slice(0, 8000),
@@ -528,8 +598,8 @@ async function runTiming() {
     });
 
     if (!ok) {
-      if (status === 403) { toast(data?.message || "Premium required"); openPaywall(); }
-      else toast(data?.message || (I18N.lang === "vi" ? "Lỗi tạo timing, thử lại" : "Timing failed, retry"));
+      if (status === 429) { toast(data?.message || "Daily limit reached. Go Premium for unlimited."); openPaywall(); }
+      else toast(data?.message || "Timing failed, retry");
       return;
     }
 

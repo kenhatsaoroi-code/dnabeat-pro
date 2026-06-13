@@ -84,6 +84,14 @@ export default async function handler(req, res) {
       }
       parts.push({ inlineData: { mimeType: audio.mime, data: audio.data } });
     }
+    // Second audio (generated song) — used by Refine/Compare mode
+    const audio2 = body.audio2;
+    if (mode === "refine" && audio2?.data && audio2?.mime) {
+      const ab2 = Math.floor((audio2.data.length * 3) / 4);
+      if (ab2 <= MAX_AUDIO_BYTES) {
+        parts.push({ inlineData: { mimeType: audio2.mime, data: audio2.data } });
+      }
+    }
     parts.push({ text: buildUserPrompt(mode, lang, body) });
 
     const payload = {
@@ -219,13 +227,26 @@ function buildUserPrompt(mode, lang, body) {
   }
 
   if (mode === "refine") {
+    // Two audios are attached: FIRST = original, SECOND = generated (Suno) version.
     return (
-      (L
-        ? "TINH CHỈNH 99%: so sánh audio tham chiếu với prompt hiện tại và chỉnh để khớp ~99%.\n" +
-          "Chỉ ra điểm lệch (BPM, key, instrumentation, tone, mix) và đưa prompt mới đã tinh chỉnh trong khối code."
-        : "REFINE 99%: compare the reference audio with the current prompt and tune it to ~99% match.\n" +
-          "List the gaps (BPM, key, instrumentation, tone, mix) and give the refined prompt in a code block.") +
-      `\n\n${L ? "Prompt hiện tại" : "Current prompt"}:\n${ctx.prompt || "(none)"}` +
+      "COMPARE TWO SONGS. The FIRST audio is the ORIGINAL. The SECOND audio is the user's GENERATED (Suno) recreation. " +
+      "Listen to both and judge how closely the generated one matches the original.\n\n" +
+      "Output in this exact structure (use markdown):\n" +
+      "## Overall similarity: NN%\n" +
+      "(one bold number 0-100% for total match)\n\n" +
+      "## Score by dimension (each 0-100%)\n" +
+      "- Tempo / BPM: NN% — short note\n" +
+      "- Key / harmony: NN% — short note\n" +
+      "- Mood / emotion: NN% — short note\n" +
+      "- Instruments / arrangement: NN% — short note\n" +
+      "- Vocal / timbre: NN% — short note\n" +
+      "- Structure: NN% — short note\n\n" +
+      "## What's different\n" +
+      "(2-4 bullets on the biggest gaps between generated and original)\n\n" +
+      "## Improved SUNO prompt\n" +
+      "(A LONGER, MORE DETAILED Suno prompt in a code block that would push the generated song closer to the original — " +
+      "be specific about genre, BPM, key, instruments, vocal style, mix, era, mood. The lower the similarity, the more detailed this prompt should be.)" +
+      `\n\n${ctx.prompt ? (L ? "Prompt người dùng đã dùng" : "Prompt the user already used") + ":\n" + ctx.prompt : ""}` +
       dsp
     );
   }

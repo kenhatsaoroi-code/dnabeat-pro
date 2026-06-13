@@ -116,7 +116,15 @@
 
       <!-- refine input -->
       <div id="refineWrap" style="display:none; margin-top:14px">
-        <textarea id="refinePrompt" data-i18n-ph="app.refinePrompt"></textarea>
+        <div class="mono" style="font-size:12px;color:var(--amber);margin-bottom:8px">Compare original (above) with your Suno-generated version</div>
+        <div class="dropzone" id="dropzone2" style="padding:22px">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style="margin-bottom:6px"><path d="M12 16V4m0 0L8 8m4-4l4 4M5 20h14" stroke="#FF4D9D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div style="font-weight:600;font-size:14px">Drop the GENERATED song here</div>
+          <div class="mono muted" style="font-size:11px;margin-top:4px">the Suno output you want to compare</div>
+          <input type="file" id="fileInput2" accept="audio/*" hidden />
+        </div>
+        <div id="fileName2" class="mono muted" style="font-size:12px;margin-top:8px"></div>
+        <textarea id="refinePrompt" placeholder="(Optional) Paste the Suno prompt you used" style="margin-top:10px"></textarea>
       </div>
 
       <!-- variation chips -->

@@ -55,8 +55,17 @@ export async function getProfile(user) {
   return profile;
 }
 
-// Is this profile currently premium? (flag + optional expiry)
+// Admin accounts — always unlimited (treated as premium).
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "kenhatsaoroi@gmail.com")
+  .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+
+export function isAdmin(profile) {
+  return !!profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase());
+}
+
+// Is this profile currently premium? (admin, or flag + optional expiry)
 export function isPremium(profile) {
+  if (isAdmin(profile)) return true;
   if (!profile?.is_premium) return false;
   if (!profile.premium_until) return true;
   return new Date(profile.premium_until).getTime() > Date.now();
