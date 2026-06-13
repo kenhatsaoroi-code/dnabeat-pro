@@ -52,17 +52,7 @@ export default async function handler(req, res) {
       : "scan";
     const lang = body.lang === "en" ? "en" : "vi";
 
-    // --- Tier gating -------------------------------------------------
-    if (!premium && mode !== "scan") {
-      return res.status(403).json({
-        error: "premium_required",
-        message:
-          lang === "vi"
-            ? "Tab này chỉ dành cho Premium. Nâng cấp để mở khoá Tinh chỉnh 99%, Biến tấu Style & Timing Lyric."
-            : "This tab is Premium-only. Upgrade to unlock Refine 99%, Style Variation & Timing Lyric.",
-      });
-    }
-
+    // --- All tabs are free (up to the daily limit); Premium = unlimited ---
     if (!premium) {
       const used = await getTodayUsage(user.id);
       if (used >= FREE_DAILY_LIMIT) {

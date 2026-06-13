@@ -15,7 +15,7 @@
 // server downloads it with the service role, then deletes it afterwards.
 // All API keys (OpenAI, Gemini) stay server-side.
 // =====================================================================
-import { cors, readJson, getUser, getProfile, isPremium, admin } from "./_lib.js";
+import { cors, readJson, getUser, getProfile, isPremium, admin, getTodayUsage, bumpUsage, FREE_DAILY_LIMIT } from "./_lib.js";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
@@ -41,15 +41,20 @@ export default async function handler(req, res) {
     const body = await readJson(req);
     const lang = body.lang === "en" ? "en" : "vi";
 
-    // --- Premium gate (Timing Lyrics is Premium-only) ----------------
+    // --- Free users allowed up to the daily limit; Premium = unlimited ---
     if (!premium) {
-      return res.status(403).json({
-        error: "premium_required",
-        message:
-          lang === "vi"
-            ? "Timing Lyrics chỉ dành cho Premium. Nâng cấp để mở khoá."
-            : "Timing Lyrics is Premium-only. Upgrade to unlock.",
-      });
+      const used = await getTodayUsage(user.id);
+      if (used >= FREE_DAILY_LIMIT) {
+        return res.status(429).json({
+          error: "daily_limit",
+          used,
+          limit: FREE_DAILY_LIMIT,
+          message:
+            lang === "vi"
+              ? `Bạn đã dùng hết ${FREE_DAILY_LIMIT} lượt miễn phí hôm nay. Nâng cấp Premium để dùng không giới hạn.`
+              : `You've used all ${FREE_DAILY_LIMIT} free runs today. Go Premium for unlimited.`,
+        });
+      }
     }
 
     storagePath = String(body.storagePath || "");
@@ -99,6 +104,8 @@ export default async function handler(req, res) {
     }
 
     const { timed, suno } = splitFormats(result.text);
+
+    if (!premium) { try { await bumpUsage(user.id); } catch (_) {} }
 
     return res.status(200).json({
       ok: true,

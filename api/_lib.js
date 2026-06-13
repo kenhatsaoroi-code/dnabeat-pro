@@ -103,4 +103,4 @@ export function cors(res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
 }
 
-export const FREE_DAILY_LIMIT = parseInt(process.env.FREE_DAILY_LIMIT || "5", 10);
+export const FREE_DAILY_LIMIT = parseInt(process.env.FREE_DAILY_LIMIT || "10", 10);

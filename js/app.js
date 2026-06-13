@@ -182,10 +182,6 @@ function buildSingleSelect(wrap, options, key) {
 }
 
 function selectTab(tab) {
-  if ((tab === "refine" || tab === "variation" || tab === "timing") && !state.premium) {
-    openPaywall();
-    return;
-  }
   state.tab = tab;
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.dataset.tab === tab));
   $("refineWrap").style.display = tab === "refine" ? "block" : "none";
@@ -503,7 +499,6 @@ async function runAnalyze() {
 // ---------------------------------------------------------------------
 async function runTiming() {
   if (state.busy || !state.file) return;
-  if (!state.premium) { openPaywall(); return; }
 
   state.busy = true; updateRunState();
   const btn = $("runBtn"), label = $("runLabel").textContent;
