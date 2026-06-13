@@ -4,7 +4,7 @@
   "trailingSlash": false,
   "functions": {
     "api/analyze.js": { "maxDuration": 60 },
-    "api/timing.js": { "maxDuration": 120 },
+    "api/timing.js": { "maxDuration": 60 },
     "api/usage.js": { "maxDuration": 10 },
     "api/paypal-webhook.js": { "maxDuration": 15 }
   },
