@@ -136,6 +136,7 @@ async function whisperTranscribe(bytes, mime) {
   fd.append("file", new Blob([bytes], { type: mime }), `audio.${ext}`);
   fd.append("model", "whisper-1");
   fd.append("response_format", "verbose_json");
+  fd.append("timestamp_granularities[]", "word");
   fd.append("timestamp_granularities[]", "segment");
 
   const r = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -146,12 +147,20 @@ async function whisperTranscribe(bytes, mime) {
   if (!r.ok) throw new Error("whisper_" + r.status);
   const json = await r.json();
 
+  // Build word-level timestamps (most precise)
+  const words = Array.isArray(json.words) ? json.words : [];
+  const wordLines = words.map((w) => `[${fmtMs(w.start)}] ${(w.word || "").trim()}`);
+
+  // Also build segment-level as fallback
   const segs = Array.isArray(json.segments) ? json.segments : [];
-  const lines = segs.map((s) => `[${fmt(s.start)}] ${(s.text || "").trim()}`);
+  const segLines = segs.map((s) => `[${fmtMs(s.start)}] ${(s.text || "").trim()}`);
+
   return {
     language: json.language || null,
     fullText: json.text || "",
-    lines: lines.join("\n"),
+    wordTimestamps: wordLines.join("\n"),
+    segmentTimestamps: segLines.join("\n"),
+    lines: wordLines.length ? wordLines.join("\n") : segLines.join("\n"),
   };
 }
 
@@ -159,15 +168,10 @@ async function whisperTranscribe(bytes, mime) {
 // Tier 2 — Gemini prompt builders
 // ---------------------------------------------------------------------
 function timingSystem(lang) {
-  return lang === "vi"
-    ? "Bạn là chuyên gia tách & căn lời bài hát cho người làm nhạc AI (Suno). " +
-        "Bạn nghe trực tiếp audio và đối chiếu với transcript có sẵn để sửa chỗ nghe sai, " +
-        "đặt mốc thời gian chính xác và phát hiện cấu trúc (Intro/Verse/Chorus/Bridge/Outro). " +
-        "Luôn trả về đúng định dạng được yêu cầu, tiếng Việt cho phần ghi chú."
-    : "You are an expert at transcribing and time-aligning song lyrics for AI-music (Suno) creators. " +
-        "You listen to the audio directly and reconcile it with the provided transcript to fix mishears, " +
-        "place accurate timestamps, and detect structure (Intro/Verse/Chorus/Bridge/Outro). " +
-        "Always return exactly the requested format.";
+  return "You are an expert at time-aligning song lyrics using Whisper word-level timestamps. " +
+    "You STRICTLY follow the timestamps from Whisper — each line's timestamp equals the FIRST word's onset time. " +
+    "You never delay or shift timestamps later. You detect song structure (Intro/Verse/Chorus/Bridge/Outro). " +
+    "When original lyrics are provided, you keep them word-for-word and only add time marks.";
 }
 
 function buildTimingPrompt(lang, dsp, transcript, userLyrics) {
@@ -176,46 +180,49 @@ function buildTimingPrompt(lang, dsp, transcript, userLyrics) {
   const bpm = dsp?.bpm;
   const lyrics = (userLyrics || "").trim();
 
-  const tx = transcript?.lines
-    ? `\n\n${L ? "Transcript thô từ Whisper (mốc giây, có thể sai chữ — hãy sửa lại)" : "Raw Whisper transcript (seconds; may contain mishears — correct them)"}:\n${transcript.lines}`
-    : `\n\n${L ? "(Không có transcript — hãy tự nghe và ghi lời)" : "(No transcript — listen and transcribe yourself)"}`;
+  // Build transcript section with word-level precision
+  let tx = "";
+  if (transcript?.wordTimestamps) {
+    tx = "\n\nWHISPER WORD-LEVEL TIMESTAMPS (each word with its exact start time — TRUST THESE TIMES):\n" +
+      transcript.wordTimestamps;
+    if (transcript.segmentTimestamps) {
+      tx += "\n\nWHISPER SEGMENT-LEVEL (for cross-reference):\n" + transcript.segmentTimestamps;
+    }
+  } else if (transcript?.lines) {
+    tx = "\n\nWhisper transcript with timestamps:\n" + transcript.lines;
+  } else {
+    tx = "\n\n(No Whisper transcript available — transcribe by listening)";
+  }
 
-  // --- Mode A: user supplied the exact original lyrics --------------
+  const timing_critical = "\n\nCRITICAL TIMING RULES:" +
+    "\n- Each lyric line's timestamp = the FIRST WORD's start time from Whisper. Do NOT delay." +
+    "\n- If Whisper says a word starts at [00:12.34], that line's timestamp is [00:12], NOT later." +
+    "\n- Timestamps must match the ONSET of singing/vocals, not the middle or end of the phrase." +
+    "\n- NEVER shift timestamps later. If anything, round DOWN (earlier) not up (later).";
+
+  // --- Mode A: user supplied exact original lyrics ---
   if (lyrics) {
-    const head = L
-      ? "Bạn được cung cấp LYRICS GỐC CHÍNH XÁC của bài hát. KHÔNG đoán từ, KHÔNG viết lại lời. " +
-        `Độ dài thật ${dur ? "≈ " + dur + " giây" : "(theo audio)"}${bpm ? ", BPM ≈ " + bpm : ""}.\n\n` +
-        "LYRICS GỐC (dùng làm chuẩn, giữ nguyên từng chữ):\n" + lyrics + tx +
-        "\n\nNhiệm vụ: Dùng timestamp của Whisper + nghe audio để GẮN mỗi dòng lyrics gốc vào đúng mốc thời gian. " +
-        "Giữ nguyên từ ngữ của lyrics gốc, chỉ thêm mốc [MM:SS]. Phát hiện Intro/Verse/Chorus/Bridge/Outro."
-      : "You are given the EXACT ORIGINAL LYRICS of the song. DO NOT guess words, DO NOT rewrite them. " +
-        `True length ${dur ? "≈ " + dur + "s" : "(per audio)"}${bpm ? ", BPM ≈ " + bpm : ""}.\n\n` +
-        "ORIGINAL LYRICS (ground truth, keep every word):\n" + lyrics + tx +
-        "\n\nTask: Use the Whisper timestamps + the audio to ALIGN each original-lyric line to its exact time. " +
-        "Keep the original wording, only add [MM:SS] marks. Detect Intro/Verse/Chorus/Bridge/Outro.";
+    const head = "You are given the EXACT ORIGINAL LYRICS. DO NOT change any words. " +
+      `Track length ${dur ? "≈ " + dur + "s" : "(per audio)"}${bpm ? ", BPM ≈ " + bpm : ""}.\n\n` +
+      "ORIGINAL LYRICS (ground truth — keep every word exactly):\n" + lyrics + tx +
+      "\n\nTask: MAP each original-lyrics line to its exact start time using the Whisper word timestamps above. " +
+      "For each line, find where its FIRST WORD appears in the Whisper timestamps and use that time. " +
+      "DO NOT rewrite or rephrase any lyrics. Detect Intro/Verse/Chorus/Bridge/Outro." + timing_critical;
     return head + timingRules(L);
   }
 
-  // --- Mode B: no lyrics — transcribe by ear -----------------------
-  const head = L
-    ? "Nghe bài hát và tạo lời CĂN THEO THỜI GIAN. " +
-      `Độ dài thật ${dur ? "≈ " + dur + " giây" : "(theo audio)"}${bpm ? ", BPM ≈ " + bpm : ""}. ` +
-      "Nếu là nhạc KHÔNG lời thì ghi rõ và mô tả phần nhạc theo mốc thời gian thay cho lời."
-    : "Listen to the song and produce TIME-ALIGNED lyrics. " +
-      `True length ${dur ? "≈ " + dur + "s" : "(per audio)"}${bpm ? ", BPM ≈ " + bpm : ""}. ` +
-      "If it is INSTRUMENTAL, say so and describe musical sections by timestamp instead of lyrics.";
+  // --- Mode B: no lyrics — transcribe by ear ---
+  const head = "Listen to the song and produce TIME-ALIGNED lyrics. " +
+    `True length ${dur ? "≈ " + dur + "s" : "(per audio)"}${bpm ? ", BPM ≈ " + bpm : ""}. ` +
+    "If instrumental, describe musical sections by timestamp." + tx + timing_critical;
 
-  return head + tx + timingRules(L);
+  return head + timingRules(L);
 }
 
 function timingRules(L) {
-  return L
-    ? "\n\nTrả về CHÍNH XÁC hai khối code, KHÔNG thêm chữ nào ngoài 2 khối (ghi chú ngắn để sau khối thứ hai cũng được):\n" +
-      "1) Khối ```timed — mỗi dòng dạng `[MM:SS] lời...`, mốc tăng dần từ [00:00], chèn dòng cấu trúc như `[00:42] [Chorus]` đúng chỗ.\n" +
-      "2) Khối ```suno — lời sạch để dán thẳng vào ô Lyrics của Suno: KHÔNG mốc thời gian, dùng thẻ cấu trúc [Intro] [Verse] [Chorus] [Bridge] [Outro], xuống dòng tự nhiên."
-    : "\n\nReturn EXACTLY two code blocks, nothing else outside them (a short note after the second block is okay):\n" +
-      "1) A ```timed block — each line `[MM:SS] lyric...`, increasing from [00:00], with structure lines like `[00:42] [Chorus]` placed correctly.\n" +
-      "2) A ```suno block — clean lyrics to paste straight into Suno's Lyrics box: NO timestamps, use [Intro] [Verse] [Chorus] [Bridge] [Outro] tags, natural line breaks.";
+  return "\n\nReturn EXACTLY two code blocks, nothing else outside them (a short note after the second block is okay):\n" +
+    "1) A ```timed block — each line `[MM:SS] lyric...`, increasing from [00:00], with structure lines like `[00:12] [Chorus]` placed correctly. Use the EARLIEST possible timestamp for each line.\n" +
+    "2) A ```suno block — clean lyrics to paste into Suno's Lyrics box: NO timestamps, use [Intro] [Verse] [Chorus] [Bridge] [Outro] tags, natural line breaks.";
 }
 
 // Pull the two fenced blocks back out for clean client rendering.
@@ -268,6 +275,11 @@ function fmt(sec) {
   sec = Math.max(0, Math.floor(sec || 0));
   const m = Math.floor(sec / 60), s = sec % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+function fmtMs(sec) {
+  sec = Math.max(0, sec || 0);
+  const m = Math.floor(sec / 60), s = Math.floor(sec % 60), ms = Math.round((sec % 1) * 100);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(ms).padStart(2, "0")}`;
 }
 function extFromMime(mime) {
   const map = {
