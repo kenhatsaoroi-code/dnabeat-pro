@@ -1,0 +1,13 @@
+{
+  "name": "dnabeat-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DNAbeat.pro — Music DNA v3 SaaS (Supabase + Gemini + PayPal on Vercel)",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

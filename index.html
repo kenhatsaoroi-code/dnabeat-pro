@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DNAbeat.pro — Giải mã DNA âm nhạc bằng AI</title>
+<meta name="description" content="MUSIC DNA v3 — AI nghe nhạc thật, phân tích BPM/key/nhạc cụ và tạo prompt Suno. Decode the DNA of any track." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css" />
+<style>
+  /* landing-specific */
+  .hero{ padding:72px 0 40px; display:grid; grid-template-columns:1.1fr .9fr; gap:40px; align-items:center; }
+  .hero h1{ font-size:clamp(36px,5vw,60px); margin:14px 0 18px; }
+  .hero p.sub{ font-size:18px; color:var(--ink-soft); max-width:540px; }
+  .hero-cta{ display:flex; gap:14px; flex-wrap:wrap; margin:28px 0 12px; }
+  .helix-stage{ display:grid; place-items:center; }
+  .helix-card{ position:relative; padding:28px; border-radius:var(--r-lg);
+    background:radial-gradient(120% 120% at 50% 0%, rgba(124,92,252,.18), transparent 60%), var(--panel);
+    border:1px solid var(--line); box-shadow:var(--shadow); }
+  .helix-readout{ display:flex; gap:10px; justify-content:center; margin-top:14px; flex-wrap:wrap; }
+  .section{ padding:64px 0; }
+  .section h2{ font-size:clamp(26px,3.4vw,38px); }
+  .feat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:34px; }
+  .feat-num{ font-family:var(--font-mono); font-size:13px; color:var(--cyan); }
+  .feat h3{ font-size:20px; margin:12px 0 8px; }
+  .feat p{ color:var(--ink-soft); font-size:15px; }
+  .video-box{ margin-top:30px; aspect-ratio:16/9; border-radius:var(--r-lg); border:1px solid var(--line);
+    background:linear-gradient(135deg,rgba(34,229,201,.08),rgba(255,77,157,.08)); display:grid; place-items:center; }
+  .play{ width:74px; height:74px; border-radius:50%; background:var(--grad); display:grid; place-items:center; cursor:pointer; box-shadow:0 14px 40px -8px var(--violet); }
+  .play svg{ width:26px; height:26px; }
+  .price-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:36px; max-width:780px; margin-inline:auto; }
+  .price-card{ position:relative; }
+  .price-card.pro{ border-color:var(--violet); box-shadow:0 24px 70px -30px var(--violet); }
+  .price-tag{ position:absolute; top:-12px; right:22px; }
+  .price-head{ display:flex; align-items:baseline; gap:6px; margin:6px 0 18px; }
+  .price-head .amt{ font-family:var(--font-display); font-weight:800; font-size:46px; }
+  .price-list{ list-style:none; display:grid; gap:11px; margin:16px 0 24px; }
+  .price-list li{ display:flex; gap:10px; align-items:flex-start; color:var(--ink-soft); font-size:15px; }
+  .price-list li svg{ width:18px; height:18px; flex:0 0 18px; margin-top:3px; }
+  footer{ border-top:1px solid var(--line); padding:30px 0; color:var(--muted); font-size:14px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  @media(max-width:860px){
+    .hero{ grid-template-columns:1fr; } .feat-grid{ grid-template-columns:1fr; }
+    .price-grid{ grid-template-columns:1fr; } .nav-links a{ display:none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+
+<nav class="nav"><div class="wrap nav-inner">
+  <a class="logo" href="/">
+    <span class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4c6 4 8 8 14 16M5 20c6-4 8-8 14-16" stroke="#0A0814" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+    DNAbeat<span class="grad-text">.pro</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features" data-i18n="nav.features"></a>
+    <a href="#pricing" data-i18n="nav.pricing"></a>
+    <a href="#demo" data-i18n="nav.demo"></a>
+    <div class="lang-toggle">
+      <button data-lang-btn="vi" onclick="I18N.set('vi')">VI</button>
+      <button data-lang-btn="en" onclick="I18N.set('en')">EN</button>
+    </div>
+    <button class="btn btn-primary" id="navAuth" data-i18n="nav.login"></button>
+  </div>
+</div></nav>
+
+<main class="wrap">
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <span class="eyebrow" data-i18n="hero.eyebrow"></span>
+      <h1><span class="grad-text" data-i18n="hero.title"></span></h1>
+      <p class="sub" data-i18n="hero.sub"></p>
+      <div class="hero-cta">
+        <button class="btn btn-google" id="heroGoogle">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.2-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 5.1 29.5 3 24 3 16 3 9.1 7.6 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.5-5.2l-6.2-5.3C29.2 35.9 26.7 37 24 37c-5.3 0-9.7-2.6-11.3-7l-6.5 5C9.1 42.3 16 47 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.2 5.3C40.9 36 44 30.6 44 24c0-1.2-.1-2.3-.4-3.5z"/></svg>
+          <span data-i18n="hero.cta"></span>
+        </button>
+        <a href="#demo" class="btn btn-ghost" data-i18n="hero.cta2"></a>
+      </div>
+      <div class="mono muted" style="font-size:13px" data-i18n="hero.note"></div>
+    </div>
+    <div class="helix-stage">
+      <div class="helix-card">
+        <div id="helix"></div>
+        <div class="helix-readout">
+          <span class="badge mono">BPM 128</span>
+          <span class="badge mono">A minor</span>
+          <span class="badge mono">stereo .82</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <span class="eyebrow">MUSIC DNA v3</span>
+    <h2 data-i18n="feat.title"></h2>
+    <div class="feat-grid">
+      <div class="card feat">
+        <div class="feat-num">01</div>
+        <span class="badge free" data-i18n="feat.badge.free"></span>
+        <h3 data-i18n="feat.1.t"></h3>
+        <p data-i18n="feat.1.d"></p>
+      </div>
+      <div class="card feat">
+        <div class="feat-num">02</div>
+        <span class="badge premium" data-i18n="feat.badge.premium"></span>
+        <h3 data-i18n="feat.2.t"></h3>
+        <p data-i18n="feat.2.d"></p>
+      </div>
+      <div class="card feat">
+        <div class="feat-num">03</div>
+        <span class="badge premium" data-i18n="feat.badge.premium"></span>
+        <h3 data-i18n="feat.3.t"></h3>
+        <p data-i18n="feat.3.d"></p>
+      </div>
+      <div class="card feat">
+        <div class="feat-num">04</div>
+        <span class="badge premium" data-i18n="feat.badge.premium"></span>
+        <h3 data-i18n="feat.4.t"></h3>
+        <p data-i18n="feat.4.d"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEMO -->
+  <section class="section" id="demo">
+    <span class="eyebrow">DEMO</span>
+    <h2 data-i18n="demo.title"></h2>
+    <p class="muted" style="margin-top:8px" data-i18n="demo.sub"></p>
+    <div class="video-box">
+      <div style="text-align:center">
+        <div class="play"><svg viewBox="0 0 24 24" fill="#0A0814"><path d="M8 5v14l11-7z"/></svg></div>
+        <div class="mono muted" style="margin-top:14px;font-size:13px" data-i18n="demo.placeholder"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="section" id="pricing">
+    <span class="eyebrow">PRICING</span>
+    <h2 style="text-align:center" data-i18n="price.title"></h2>
+    <div class="price-grid">
+      <div class="card price-card">
+        <h3 data-i18n="price.free.t"></h3>
+        <div class="price-head"><span class="amt" data-i18n="price.free.p"></span></div>
+        <ul class="price-list">
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 7" stroke="#22E5C9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="price.free.1"></span></li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 7" stroke="#22E5C9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="price.free.2"></span></li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 7" stroke="#22E5C9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="price.free.3"></span></li>
+        </ul>
+        <button class="btn btn-ghost" id="freeCta" data-i18n="price.free.cta" style="width:100%; justify-content:center"></button>
+      </div>
+      <div class="card price-card pro">
+        <span class="badge premium price-tag" data-i18n="price.pro.tag"></span>
+        <h3 data-i18n="price.pro.t"></h3>
+        <div class="price-head"><span class="amt grad-text">$10</span><span class="muted" data-i18n="price.pro.per"></span></div>
+        <ul class="price-list">
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 7" stroke="#FF4D9D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="price.pro.1"></span></li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 7" stroke="#FF4D9D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="price.pro.2"></span></li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 7" stroke="#FF4D9D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="price.pro.3"></span></li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 7" stroke="#FF4D9D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="price.pro.4"></span></li>
+        </ul>
+        <button class="btn btn-primary" id="proCta" data-i18n="price.pro.cta" style="width:100%; justify-content:center"></button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <div>© <span id="yr"></span> DNAbeat.pro — <span data-i18n="foot.rights"></span></div>
+  <div class="mono">dnabeat.pro</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/fx.js"></script>
+<script>
+  document.getElementById("yr").textContent = new Date().getFullYear();
+  I18N.set(I18N.lang);
+  if (window.renderHelix) renderHelix(document.getElementById("helix"), { w: 300, h: 340 });
+
+  const goLogin = () => Auth.loginGoogle("/app");
+  ["heroGoogle","freeCta","proCta"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.onclick = goLogin;
+  });
+
+  // If already signed in, turn the nav button into "Open Tool".
+  Auth.getSession().then(session => {
+    const nav = document.getElementById("navAuth");
+    if (session) {
+      nav.textContent = I18N.t("nav.open");
+      nav.onclick = () => (window.location.href = "/app");
+    } else {
+      nav.onclick = goLogin;
+    }
+  });
+</script>
+</body>
+</html>

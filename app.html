@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MUSIC DNA v3 — DNAbeat.pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css" />
+<style>
+  .app-nav{ display:flex; align-items:center; justify-content:space-between; height:64px; }
+  .app-right{ display:flex; align-items:center; gap:14px; }
+  .quota{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+  .avatar{ width:30px; height:30px; border-radius:50%; border:1px solid var(--line); }
+  .tabs{ display:flex; gap:8px; margin:26px 0 20px; flex-wrap:wrap; }
+  .tab{ display:flex; align-items:center; gap:8px; padding:11px 18px; border-radius:999px;
+    border:1px solid var(--line); background:rgba(255,255,255,.02); color:var(--ink-soft);
+    font-family:var(--font-display); font-weight:600; font-size:14px; cursor:pointer; }
+  .tab.on{ background:var(--grad-soft); border-color:var(--violet); color:var(--ink); }
+  .tab .lock{ font-size:10px; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media(max-width:880px){ .grid{ grid-template-columns:1fr; } }
+  .dropzone{ border:1.5px dashed var(--line); border-radius:var(--r); padding:34px; text-align:center;
+    cursor:pointer; transition:.15s; background:rgba(255,255,255,.015); }
+  .dropzone:hover,.dropzone.drag{ border-color:var(--violet); background:var(--grad-soft); }
+  .dz-icon{ width:46px; height:46px; margin:0 auto 12px; }
+  .wave{ height:64px; margin:16px 0; border-radius:10px; overflow:hidden; background:#0c0920; }
+  .dsp{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px; }
+  .dsp .cell{ background:var(--panel-2); border:1px solid var(--line); border-radius:var(--r-sm); padding:12px; }
+  .dsp .k{ font-family:var(--font-mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
+  .dsp .v{ font-family:var(--font-display); font-weight:700; font-size:20px; margin-top:3px; }
+  .bands{ display:flex; gap:6px; align-items:flex-end; height:40px; margin-top:6px; }
+  .bands span{ flex:1; background:var(--grad); border-radius:3px 3px 0 0; min-height:4px; }
+  textarea{ width:100%; min-height:120px; resize:vertical; background:var(--panel-2); color:var(--ink);
+    border:1px solid var(--line); border-radius:var(--r-sm); padding:12px; font-family:var(--font-body); font-size:14px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .run{ width:100%; justify-content:center; margin-top:16px; }
+  .result{ min-height:300px; }
+  .result h1,.result h2,.result h3{ font-size:18px; margin:18px 0 8px; }
+  .result p{ margin:8px 0; color:var(--ink-soft); }
+  .result ul,.result ol{ margin:8px 0 8px 20px; color:var(--ink-soft); }
+  .result code:not(pre code){ font-family:var(--font-mono); background:#0c0920; padding:2px 6px; border-radius:5px; font-size:13px; color:var(--cyan); }
+  .codeblock{ position:relative; margin:14px 0; }
+  .codeblock pre{ background:#0a0718; border:1px solid var(--line); border-radius:var(--r-sm);
+    padding:14px 14px 14px; overflow:auto; font-family:var(--font-mono); font-size:13px; color:var(--ink); }
+  .copy-btn{ position:absolute; top:8px; right:8px; font-family:var(--font-mono); font-size:11px;
+    padding:5px 10px; border-radius:7px; border:1px solid var(--line); background:var(--panel); color:var(--ink-soft); cursor:pointer; }
+  .copy-btn:hover{ border-color:var(--violet); color:var(--ink); }
+  .spinner{ width:18px; height:18px; border:2px solid rgba(255,255,255,.25); border-top-color:#0A0814; border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .empty{ display:grid; place-items:center; height:280px; color:var(--muted); text-align:center; font-size:14px; }
+
+  .modal{ position:fixed; inset:0; z-index:50; display:none; place-items:center; background:rgba(5,4,12,.74); backdrop-filter:blur(6px); }
+  .modal.show{ display:grid; }
+  .modal .box{ width:min(440px,92vw); }
+  #paypal-button-container{ margin-top:18px; }
+  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--panel); border:1px solid var(--violet);
+    padding:12px 20px; border-radius:999px; font-size:14px; z-index:60; opacity:0; transition:.2s; pointer-events:none; }
+  .toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+
+<nav class="nav"><div class="wrap app-nav">
+  <a class="logo" href="/">
+    <span class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4c6 4 8 8 14 16M5 20c6-4 8-8 14-16" stroke="#0A0814" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+    DNAbeat<span class="grad-text">.pro</span>
+  </a>
+  <div class="app-right">
+    <div class="lang-toggle">
+      <button data-lang-btn="vi" onclick="I18N.set('vi')">VI</button>
+      <button data-lang-btn="en" onclick="I18N.set('en')">EN</button>
+    </div>
+    <span class="quota" id="quota"></span>
+    <span class="badge" id="planBadge"></span>
+    <button class="btn btn-primary" id="upgradeBtn" style="padding:9px 16px; font-size:13px" data-i18n="app.upgrade"></button>
+    <img class="avatar" id="avatar" alt="" style="display:none" />
+    <button class="btn btn-ghost" id="logoutBtn" style="padding:9px 14px; font-size:13px" data-i18n="app.logout"></button>
+  </div>
+</div></nav>
+
+<main class="wrap" style="padding-top:18px; padding-bottom:60px">
+  <div>
+    <span class="eyebrow">MUSIC DNA v3</span>
+    <h2 style="font-size:26px; margin-top:6px"><span id="welcome"></span></h2>
+    <p class="muted" data-i18n="app.tagline"></p>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-tab="scan"><span data-i18n="app.tab1"></span></button>
+    <button class="tab" data-tab="refine"><span data-i18n="app.tab2"></span> <span class="badge premium lock" data-i18n="app.locked"></span></button>
+    <button class="tab" data-tab="variation"><span data-i18n="app.tab3"></span> <span class="badge premium lock" data-i18n="app.locked"></span></button>
+    <button class="tab" data-tab="timing"><span data-i18n="app.tab4"></span> <span class="badge premium lock" data-i18n="app.locked"></span></button>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: input -->
+    <div class="card">
+      <div class="dropzone" id="dropzone">
+        <svg class="dz-icon" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L8 8m4-4l4 4" stroke="#7C5CFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#22E5C9" stroke-width="2" stroke-linecap="round"/></svg>
+        <div style="font-family:var(--font-display);font-weight:600" data-i18n="app.drop"></div>
+        <div class="muted mono" style="font-size:12px;margin-top:4px" data-i18n="app.drop2"></div>
+        <input type="file" id="fileInput" accept="audio/*" hidden />
+      </div>
+      <div id="fileName" class="mono muted" style="font-size:12px;margin-top:10px"></div>
+      <div class="wave" id="wave"></div>
+
+      <div class="dsp" id="dspPanel" style="display:none">
+        <div class="cell"><div class="k">BPM</div><div class="v" id="dBpm">—</div></div>
+        <div class="cell"><div class="k">Key</div><div class="v" id="dKey">—</div></div>
+        <div class="cell"><div class="k">Stereo</div><div class="v" id="dStereo">—</div></div>
+        <div class="cell"><div class="k" data-i18n="app.dsp"></div><div class="bands" id="dBands"></div></div>
+      </div>
+
+      <!-- refine input -->
+      <div id="refineWrap" style="display:none; margin-top:14px">
+        <textarea id="refinePrompt" data-i18n-ph="app.refinePrompt"></textarea>
+      </div>
+
+      <!-- variation chips -->
+      <div id="variationWrap" style="display:none; margin-top:14px">
+        <div class="mono muted" style="font-size:12px" data-i18n="app.pickStyles"></div>
+        <div class="chips" id="styleChips"></div>
+        <div class="mono muted" style="font-size:12px; margin-top:14px" data-i18n="app.pickVoice"></div>
+        <div class="chips" id="voiceChips"></div>
+        <div class="mono muted" style="font-size:12px; margin-top:14px" data-i18n="app.pickMood"></div>
+        <div class="chips" id="moodChips"></div>
+      </div>
+
+      <!-- timing note -->
+      <div id="timingWrap" style="display:none; margin-top:14px">
+        <div class="mono muted" style="font-size:12px; line-height:1.6" data-i18n="app.timingHint"></div>
+      </div>
+
+      <button class="btn btn-primary run" id="runBtn" disabled>
+        <span id="runLabel" data-i18n="app.run1"></span>
+      </button>
+    </div>
+
+    <!-- RIGHT: result -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong style="font-family:var(--font-display)" data-i18n="app.result"></strong>
+        <span class="mono muted" id="modelTag" style="font-size:11px"></span>
+      </div>
+      <div class="result" id="result">
+        <div class="empty" data-i18n="app.empty"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- PAYWALL MODAL -->
+<div class="modal" id="payModal">
+  <div class="card box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="font-size:20px" data-i18n="app.payTitle"></h3>
+      <button class="copy-btn" id="payClose" data-i18n="app.payClose"></button>
+    </div>
+    <p class="muted" style="margin:8px 0 4px;font-size:14px" data-i18n="app.paySub"></p>
+    <div id="paypal-button-container"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/fx.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
