@@ -181,7 +181,7 @@ const STRINGS = {
 };
 
 const I18N = {
-  lang: localStorage.getItem("dnabeat_lang") || "vi",
+  lang: "en",
   t(key) {
     return (STRINGS[this.lang] && STRINGS[this.lang][key]) || STRINGS.vi[key] || key;
   },
