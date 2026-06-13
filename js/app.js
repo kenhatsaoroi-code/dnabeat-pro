@@ -103,6 +103,7 @@ function wireUI() {
   $("logoutBtn").onclick = () => Auth.logout();
   $("upgradeBtn").onclick = openPaywall;
   $("payClose").onclick = () => $("payModal").classList.remove("show");
+  $("payModal").onclick = (e) => { if (e.target === $("payModal")) $("payModal").classList.remove("show"); };
 
   // tabs
   document.querySelectorAll(".tab").forEach((t) => {
@@ -657,7 +658,7 @@ function openPaywall() {
   if (paypalLoaded) return;
   paypalLoaded = true;
   const s = document.createElement("script");
-  s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(cfg.PAYPAL_CLIENT_ID)}&vault=true&intent=subscription`;
+  s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(cfg.PAYPAL_CLIENT_ID)}&vault=true&intent=subscription&locale=en_US`;
   s.onload = renderPayPal;
   s.onerror = () => toast("PayPal SDK failed to load");
   document.body.appendChild(s);
