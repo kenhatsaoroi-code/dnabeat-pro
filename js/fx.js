@@ -9,7 +9,7 @@
   if (canvas) {
     const ctx = canvas.getContext("2d");
     let w, h, parts;
-    const COLORS = ["#22E5C9", "#7C5CFC", "#FF4D9D"];
+    const COLORS = ["#FFB23E", "#FFD36E", "#FF4D9D"];
     function resize() {
       w = canvas.width = innerWidth * devicePixelRatio;
       h = canvas.height = innerHeight * devicePixelRatio;

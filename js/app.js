@@ -238,7 +238,7 @@ function drawWave(ab) {
   const data = ab.getChannelData(0);
   const step = Math.floor(data.length / W);
   const g = x.createLinearGradient(0, 0, W, 0);
-  g.addColorStop(0, "#22E5C9"); g.addColorStop(.55, "#7C5CFC"); g.addColorStop(1, "#FF4D9D");
+  g.addColorStop(0, "#FFB23E"); g.addColorStop(.5, "#FFD36E"); g.addColorStop(1, "#FF4D9D");
   x.fillStyle = g;
   for (let i = 0; i < W; i++) {
     let min = 1, max = -1;

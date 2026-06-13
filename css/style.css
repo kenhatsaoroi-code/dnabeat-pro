@@ -3,23 +3,23 @@
    Dark "audio lab" theme. Signature: DNA helix made of spectrum bars.
    ===================================================================== */
 :root{
-  --bg:        #0A0814;
-  --bg-2:      #0E0B1C;
-  --panel:     #140F28;
-  --panel-2:   #1A1436;
-  --line:      #2A2350;
-  --ink:       #ECE9F7;
-  --ink-soft:  #C2BBDD;
-  --muted:     #7B739E;
+  --bg:        #0A0810;
+  --bg-2:      #120A14;
+  --panel:     #1A1018;
+  --panel-2:   #221422;
+  --line:      #3A2433;
+  --ink:       #F3EEF0;
+  --ink-soft:  #D7C9CF;
+  --muted:     #9A8088;
 
   --cyan:      #22E5C9;
-  --violet:    #7C5CFC;
+  --violet:    #E0567F;
   --pink:      #FF4D9D;
   --amber:     #FFB23E;
   --gold:      #FFD36E;
 
-  --grad: linear-gradient(90deg, var(--cyan), var(--violet) 55%, var(--pink));
-  --grad-soft: linear-gradient(135deg, rgba(34,229,201,.18), rgba(124,92,252,.18) 55%, rgba(255,77,157,.18));
+  --grad: linear-gradient(90deg, var(--amber), var(--gold) 45%, var(--pink));
+  --grad-soft: linear-gradient(135deg, rgba(255,178,62,.18), rgba(255,211,110,.16) 45%, rgba(255,77,157,.18));
 
   --r-sm: 10px;
   --r:    16px;
