@@ -1,5 +1,6 @@
+﻿;(function(){
 // =====================================================================
-// app.js — MUSIC DNA v3 client
+// app.js â€” MUSIC DNA v3 client
 // =====================================================================
 const cfg = window.DNABEAT_CONFIG;
 
@@ -25,28 +26,28 @@ const STYLE_OPTIONS = [
   "Future Bass", "Bossa Nova", "Hardstyle", "Ambient",
 ];
 
-// 8 voices — label + Vietnamese/English description (shown as tooltip)
+// 8 voices â€” label + Vietnamese/English description (shown as tooltip)
 const VOICE_OPTIONS = [
-  { id: "Nữ trong trẻo",    en: "Bright female",   vi: "Giọng nữ cao, sáng, ngọt",          d_en: "High, bright, sweet female vocal" },
-  { id: "Nam ấm trầm",      en: "Warm male",       vi: "Giọng nam trầm, ấm, chững chạc",     d_en: "Deep, warm, grounded male vocal" },
-  { id: "Rap / Hip-hop",    en: "Rap / Hip-hop",   vi: "Đọc rap dứt khoát, flow nhanh",      d_en: "Punchy rap, fast flow" },
-  { id: "Thì thầm",         en: "Whisper",         vi: "Hát thì thầm, gần gũi, ASMR",        d_en: "Whispered, intimate, ASMR" },
-  { id: "Soul / R&B",       en: "Soul / R&B",      vi: "Luyến láy, nhiều cảm xúc, rung",     d_en: "Soulful runs, emotive, vibrato" },
-  { id: "Rock gằn",         en: "Rock / gritty",   vi: "Giọng khỏe, gằn, năng lượng cao",    d_en: "Strong, gritty, high energy" },
-  { id: "Trẻ em đáng yêu",  en: "Cute / childlike",vi: "Giọng cao, tươi vui, hồn nhiên",     d_en: "High, cheerful, playful" },
-  { id: "Robot auto-tune",  en: "Robot / auto-tune",vi: "Vocoder, điện tử, futuristic",      d_en: "Vocoder, electronic, futuristic" },
+  { id: "Ná»¯ trong tráº»o",    en: "Bright female",   vi: "Giá»ng ná»¯ cao, sĂ¡ng, ngá»t",          d_en: "High, bright, sweet female vocal" },
+  { id: "Nam áº¥m tráº§m",      en: "Warm male",       vi: "Giá»ng nam tráº§m, áº¥m, chá»¯ng cháº¡c",     d_en: "Deep, warm, grounded male vocal" },
+  { id: "Rap / Hip-hop",    en: "Rap / Hip-hop",   vi: "Äá»c rap dá»©t khoĂ¡t, flow nhanh",      d_en: "Punchy rap, fast flow" },
+  { id: "ThĂ¬ tháº§m",         en: "Whisper",         vi: "HĂ¡t thĂ¬ tháº§m, gáº§n gÅ©i, ASMR",        d_en: "Whispered, intimate, ASMR" },
+  { id: "Soul / R&B",       en: "Soul / R&B",      vi: "Luyáº¿n lĂ¡y, nhiá»u cáº£m xĂºc, rung",     d_en: "Soulful runs, emotive, vibrato" },
+  { id: "Rock gáº±n",         en: "Rock / gritty",   vi: "Giá»ng khá»e, gáº±n, nÄƒng lÆ°á»£ng cao",    d_en: "Strong, gritty, high energy" },
+  { id: "Tráº» em Ä‘Ă¡ng yĂªu",  en: "Cute / childlike",vi: "Giá»ng cao, tÆ°Æ¡i vui, há»“n nhiĂªn",     d_en: "High, cheerful, playful" },
+  { id: "Robot auto-tune",  en: "Robot / auto-tune",vi: "Vocoder, Ä‘iá»‡n tá»­, futuristic",      d_en: "Vocoder, electronic, futuristic" },
 ];
 
-// 8 moods — label + Vietnamese/English description
+// 8 moods â€” label + Vietnamese/English description
 const MOOD_OPTIONS = [
-  { id: "Vui tươi",      en: "Upbeat",     vi: "Năng lượng tích cực, rộn ràng",   d_en: "Positive, lively energy" },
-  { id: "Buồn tâm trạng",en: "Melancholic",vi: "Sâu lắng, da diết",               d_en: "Deep, wistful, aching" },
-  { id: "Lãng mạn",      en: "Romantic",   vi: "Ngọt ngào, tình cảm",             d_en: "Sweet, tender, loving" },
-  { id: "Hùng tráng",    en: "Epic",       vi: "Bùng nổ, cao trào, anthemic",     d_en: "Explosive, climactic, anthemic" },
-  { id: "Chill thư giãn",en: "Chill",      vi: "Nhẹ nhàng, lo-fi, êm",            d_en: "Soft, lo-fi, easy" },
-  { id: "Bí ẩn u tối",   en: "Dark",       vi: "Huyền bí, dark, cinematic",       d_en: "Mysterious, dark, cinematic" },
-  { id: "Hoài niệm",     en: "Nostalgic",  vi: "Retro, vintage, man mác",         d_en: "Retro, vintage, bittersweet" },
-  { id: "Mạnh mẽ tự tin",en: "Confident",  vi: "Bốc, máu lửa, empowering",        d_en: "Bold, fiery, empowering" },
+  { id: "Vui tÆ°Æ¡i",      en: "Upbeat",     vi: "NÄƒng lÆ°á»£ng tĂ­ch cá»±c, rá»™n rĂ ng",   d_en: "Positive, lively energy" },
+  { id: "Buá»“n tĂ¢m tráº¡ng",en: "Melancholic",vi: "SĂ¢u láº¯ng, da diáº¿t",               d_en: "Deep, wistful, aching" },
+  { id: "LĂ£ng máº¡n",      en: "Romantic",   vi: "Ngá»t ngĂ o, tĂ¬nh cáº£m",             d_en: "Sweet, tender, loving" },
+  { id: "HĂ¹ng trĂ¡ng",    en: "Epic",       vi: "BĂ¹ng ná»•, cao trĂ o, anthemic",     d_en: "Explosive, climactic, anthemic" },
+  { id: "Chill thÆ° giĂ£n",en: "Chill",      vi: "Nháº¹ nhĂ ng, lo-fi, Ăªm",            d_en: "Soft, lo-fi, easy" },
+  { id: "BĂ­ áº©n u tá»‘i",   en: "Dark",       vi: "Huyá»n bĂ­, dark, cinematic",       d_en: "Mysterious, dark, cinematic" },
+  { id: "HoĂ i niá»‡m",     en: "Nostalgic",  vi: "Retro, vintage, man mĂ¡c",         d_en: "Retro, vintage, bittersweet" },
+  { id: "Máº¡nh máº½ tá»± tin",en: "Confident",  vi: "Bá»‘c, mĂ¡u lá»­a, empowering",        d_en: "Bold, fiery, empowering" },
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -160,7 +161,7 @@ function buildStyleChips() {
   buildSingleSelect($("moodChips"), MOOD_OPTIONS, "mood");
 }
 
-// single-select chip group (voice / mood) — click again to clear
+// single-select chip group (voice / mood) â€” click again to clear
 function buildSingleSelect(wrap, options, key) {
   options.forEach((o) => {
     const c = document.createElement("div");
@@ -215,7 +216,7 @@ async function handleFile(file) {
   const ac = new (window.AudioContext || window.webkitAudioContext)();
   let audioBuffer;
   try { audioBuffer = await ac.decodeAudioData(buf.slice(0)); }
-  catch (e) { toast("⚠ " + (I18N.lang === "vi" ? "Không đọc được file audio" : "Could not decode audio")); return; }
+  catch (e) { toast("â  " + (I18N.lang === "vi" ? "KhĂ´ng Ä‘á»c Ä‘Æ°á»£c file audio" : "Could not decode audio")); return; }
 
   state.audioBuffer = audioBuffer;
   drawWave(audioBuffer);
@@ -415,7 +416,7 @@ function renderDSP(d) {
   });
 }
 
-// ---- encode trimmed mono 16k WAV → base64 (for Gemini) ----
+// ---- encode trimmed mono 16k WAV â†’ base64 (for Gemini) ----
 function encodeClipBase64(ab, maxSec, targetSr) {
   const srcSr = ab.sampleRate;
   const L = ab.getChannelData(0);
@@ -486,7 +487,7 @@ async function runAnalyze() {
       toast(data?.message || "Limit reached");
       openPaywall();
     } else {
-      toast(data?.message || (I18N.lang === "vi" ? "Có lỗi xảy ra, thử lại" : "Something went wrong"));
+      toast(data?.message || (I18N.lang === "vi" ? "CĂ³ lá»—i xáº£y ra, thá»­ láº¡i" : "Something went wrong"));
     }
     return;
   }
@@ -497,7 +498,7 @@ async function runAnalyze() {
 }
 
 // ---------------------------------------------------------------------
-// Tab 4 — Timing Lyrics (Whisper -> Gemini, via Supabase Storage)
+// Tab 4 â€” Timing Lyrics (Whisper -> Gemini, via Supabase Storage)
 // ---------------------------------------------------------------------
 async function runTiming() {
   if (state.busy || !state.file) return;
@@ -531,15 +532,15 @@ async function runTiming() {
 
     if (!ok) {
       if (status === 403) { toast(data?.message || "Premium required"); openPaywall(); }
-      else toast(data?.message || (I18N.lang === "vi" ? "Lỗi tạo timing, thử lại" : "Timing failed, retry"));
+      else toast(data?.message || (I18N.lang === "vi" ? "Lá»—i táº¡o timing, thá»­ láº¡i" : "Timing failed, retry"));
       return;
     }
 
     $("modelTag").textContent =
-      (data.model || "") + (data.whisper ? " · Whisper" : "");
+      (data.model || "") + (data.whisper ? " Â· Whisper" : "");
     renderTiming(data.timed || "", data.suno || "");
   } catch (e) {
-    toast((I18N.lang === "vi" ? "Lỗi: " : "Error: ") + (e.message || e));
+    toast((I18N.lang === "vi" ? "Lá»—i: " : "Error: ") + (e.message || e));
   } finally {
     state.busy = false;
     btn.innerHTML = `<span id="runLabel">${label}</span>`;
@@ -584,7 +585,7 @@ function renderTiming(timed, suno) {
     head.appendChild(h); head.appendChild(btns);
     const pre = document.createElement("pre");
     pre.style.cssText = "background:#0a0718;border:1px solid var(--line);border-radius:var(--r-sm);padding:14px;overflow:auto;font-family:var(--font-mono);font-size:13px;color:var(--ink);white-space:pre-wrap";
-    pre.textContent = content || "—";
+    pre.textContent = content || "â€”";
     card.appendChild(head); card.appendChild(pre);
     return card;
   };
@@ -605,11 +606,11 @@ function downloadLrc(timed) {
   a.href = url; a.download = `${state.fileBase || "track"}.lrc`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1500);
-  toast(I18N.lang === "vi" ? "Đã tải file .lrc" : "Downloaded .lrc");
+  toast(I18N.lang === "vi" ? "ÄĂ£ táº£i file .lrc" : "Downloaded .lrc");
 }
 
 // ---------------------------------------------------------------------
-// Minimal markdown → HTML with copyable code blocks
+// Minimal markdown â†’ HTML with copyable code blocks
 // ---------------------------------------------------------------------
 function renderMarkdown(host, md) {
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -672,17 +673,17 @@ function renderPayPal() {
         custom_id: state.user?.id || "",
       }),
     onApprove: async (data) => {
-      toast(I18N.lang === "vi" ? "Đang kích hoạt Premium…" : "Activating Premium…");
+      toast(I18N.lang === "vi" ? "Äang kĂ­ch hoáº¡t Premiumâ€¦" : "Activating Premiumâ€¦");
       const res = await Auth.api("/api/activate", {
         method: "POST",
         body: JSON.stringify({ subscriptionID: data.subscriptionID }),
       });
       if (res.ok && res.data?.premium) {
         $("payModal").classList.remove("show");
-        toast(I18N.lang === "vi" ? "🎉 Đã nâng cấp Premium!" : "🎉 You're Premium now!");
+        toast(I18N.lang === "vi" ? "đŸ‰ ÄĂ£ nĂ¢ng cáº¥p Premium!" : "đŸ‰ You're Premium now!");
         await refreshUsage();
       } else {
-        toast(I18N.lang === "vi" ? "Kích hoạt lỗi — liên hệ hỗ trợ" : "Activation failed — contact support");
+        toast(I18N.lang === "vi" ? "KĂ­ch hoáº¡t lá»—i â€” liĂªn há»‡ há»— trá»£" : "Activation failed â€” contact support");
       }
     },
     onError: () => toast("PayPal error"),
@@ -695,3 +696,5 @@ function toast(msg) {
   t.textContent = msg; t.classList.add("show");
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 3200);
 }
+
+})();
