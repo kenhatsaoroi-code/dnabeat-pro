@@ -35,7 +35,11 @@
 html{ scroll-behavior:smooth; }
 body{
   font-family:var(--font-body);
-  background:var(--bg);
+  background:
+    radial-gradient(900px 600px at 88% -5%, rgba(255,178,62,.14), transparent 60%),
+    radial-gradient(800px 600px at 5% 105%, rgba(255,77,157,.12), transparent 60%),
+    linear-gradient(165deg, #0B0810 0%, #150A18 55%, #1C0E1A 100%);
+  background-attachment:fixed;
   color:var(--ink);
   line-height:1.6;
   -webkit-font-smoothing:antialiased;
