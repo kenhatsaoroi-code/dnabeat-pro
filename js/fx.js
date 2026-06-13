@@ -71,8 +71,8 @@
     const N = 26, amp = W * 0.32, midX = W / 2;
     function grad(a) {
       const g = x.createLinearGradient(0, 0, W, 0);
-      g.addColorStop(0, "rgba(34,229,201," + a + ")");
-      g.addColorStop(0.55, "rgba(124,92,252," + a + ")");
+      g.addColorStop(0, "rgba(255,178,62," + a + ")");
+      g.addColorStop(0.5, "rgba(255,211,110," + a + ")");
       g.addColorStop(1, "rgba(255,77,157," + a + ")");
       return g;
     }

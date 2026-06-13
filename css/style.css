@@ -15,6 +15,8 @@
   --cyan:      #22E5C9;
   --violet:    #7C5CFC;
   --pink:      #FF4D9D;
+  --amber:     #FFB23E;
+  --gold:      #FFD36E;
 
   --grad: linear-gradient(90deg, var(--cyan), var(--violet) 55%, var(--pink));
   --grad-soft: linear-gradient(135deg, rgba(34,229,201,.18), rgba(124,92,252,.18) 55%, rgba(255,77,157,.18));
@@ -46,8 +48,8 @@ canvas#particles{ position:fixed; inset:0; z-index:0; pointer-events:none; }
 /* ---- type ---- */
 h1,h2,h3{ font-family:var(--font-display); font-weight:700; letter-spacing:-.02em; line-height:1.1; }
 .eyebrow{
-  font-family:var(--font-mono); font-size:12px; letter-spacing:.28em;
-  text-transform:uppercase; color:var(--cyan);
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.28em; font-weight:700;
+  text-transform:uppercase; color:var(--amber); text-shadow:0 0 18px rgba(255,178,62,.35);
 }
 .grad-text{
   background:var(--grad); -webkit-background-clip:text; background-clip:text;
