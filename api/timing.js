@@ -90,7 +90,7 @@ export default async function handler(req, res) {
     if (bytes.length <= MAX_INLINE_BYTES) {
       parts.push({ inlineData: { mimeType: mime, data: bytes.toString("base64") } });
     }
-    parts.push({ text: buildTimingPrompt(lang, body.dsp, transcript) });
+    parts.push({ text: buildTimingPrompt(lang, body.dsp, transcript, body.userLyrics) });
 
     const payload = {
       systemInstruction: { parts: [{ text: timingSystem(lang) }] },
@@ -170,14 +170,33 @@ function timingSystem(lang) {
         "Always return exactly the requested format.";
 }
 
-function buildTimingPrompt(lang, dsp, transcript) {
+function buildTimingPrompt(lang, dsp, transcript, userLyrics) {
   const L = lang === "vi";
   const dur = dsp?.durationSec;
   const bpm = dsp?.bpm;
+  const lyrics = (userLyrics || "").trim();
+
   const tx = transcript?.lines
     ? `\n\n${L ? "Transcript thô từ Whisper (mốc giây, có thể sai chữ — hãy sửa lại)" : "Raw Whisper transcript (seconds; may contain mishears — correct them)"}:\n${transcript.lines}`
     : `\n\n${L ? "(Không có transcript — hãy tự nghe và ghi lời)" : "(No transcript — listen and transcribe yourself)"}`;
 
+  // --- Mode A: user supplied the exact original lyrics --------------
+  if (lyrics) {
+    const head = L
+      ? "Bạn được cung cấp LYRICS GỐC CHÍNH XÁC của bài hát. KHÔNG đoán từ, KHÔNG viết lại lời. " +
+        `Độ dài thật ${dur ? "≈ " + dur + " giây" : "(theo audio)"}${bpm ? ", BPM ≈ " + bpm : ""}.\n\n` +
+        "LYRICS GỐC (dùng làm chuẩn, giữ nguyên từng chữ):\n" + lyrics + tx +
+        "\n\nNhiệm vụ: Dùng timestamp của Whisper + nghe audio để GẮN mỗi dòng lyrics gốc vào đúng mốc thời gian. " +
+        "Giữ nguyên từ ngữ của lyrics gốc, chỉ thêm mốc [MM:SS]. Phát hiện Intro/Verse/Chorus/Bridge/Outro."
+      : "You are given the EXACT ORIGINAL LYRICS of the song. DO NOT guess words, DO NOT rewrite them. " +
+        `True length ${dur ? "≈ " + dur + "s" : "(per audio)"}${bpm ? ", BPM ≈ " + bpm : ""}.\n\n` +
+        "ORIGINAL LYRICS (ground truth, keep every word):\n" + lyrics + tx +
+        "\n\nTask: Use the Whisper timestamps + the audio to ALIGN each original-lyric line to its exact time. " +
+        "Keep the original wording, only add [MM:SS] marks. Detect Intro/Verse/Chorus/Bridge/Outro.";
+    return head + timingRules(L);
+  }
+
+  // --- Mode B: no lyrics — transcribe by ear -----------------------
   const head = L
     ? "Nghe bài hát và tạo lời CĂN THEO THỜI GIAN. " +
       `Độ dài thật ${dur ? "≈ " + dur + " giây" : "(theo audio)"}${bpm ? ", BPM ≈ " + bpm : ""}. ` +
@@ -186,15 +205,17 @@ function buildTimingPrompt(lang, dsp, transcript) {
       `True length ${dur ? "≈ " + dur + "s" : "(per audio)"}${bpm ? ", BPM ≈ " + bpm : ""}. ` +
       "If it is INSTRUMENTAL, say so and describe musical sections by timestamp instead of lyrics.";
 
-  const rules = L
+  return head + tx + timingRules(L);
+}
+
+function timingRules(L) {
+  return L
     ? "\n\nTrả về CHÍNH XÁC hai khối code, KHÔNG thêm chữ nào ngoài 2 khối (ghi chú ngắn để sau khối thứ hai cũng được):\n" +
       "1) Khối ```timed — mỗi dòng dạng `[MM:SS] lời...`, mốc tăng dần từ [00:00], chèn dòng cấu trúc như `[00:42] [Chorus]` đúng chỗ.\n" +
       "2) Khối ```suno — lời sạch để dán thẳng vào ô Lyrics của Suno: KHÔNG mốc thời gian, dùng thẻ cấu trúc [Intro] [Verse] [Chorus] [Bridge] [Outro], xuống dòng tự nhiên."
     : "\n\nReturn EXACTLY two code blocks, nothing else outside them (a short note after the second block is okay):\n" +
       "1) A ```timed block — each line `[MM:SS] lyric...`, increasing from [00:00], with structure lines like `[00:42] [Chorus]` placed correctly.\n" +
       "2) A ```suno block — clean lyrics to paste straight into Suno's Lyrics box: NO timestamps, use [Intro] [Verse] [Chorus] [Bridge] [Outro] tags, natural line breaks.";
-
-  return head + tx + rules;
 }
 
 // Pull the two fenced blocks back out for clean client rendering.

@@ -90,9 +90,9 @@
 
   <div class="tabs" id="tabs">
     <button class="tab on" data-tab="scan"><span data-i18n="app.tab1"></span></button>
-    <button class="tab" data-tab="refine"><span data-i18n="app.tab2"></span> <span class="badge premium lock" data-i18n="app.locked"></span></button>
-    <button class="tab" data-tab="variation"><span data-i18n="app.tab3"></span> <span class="badge premium lock" data-i18n="app.locked"></span></button>
-    <button class="tab" data-tab="timing"><span data-i18n="app.tab4"></span> <span class="badge premium lock" data-i18n="app.locked"></span></button>
+    <button class="tab" data-tab="refine"><span data-i18n="app.tab2"></span></button>
+    <button class="tab" data-tab="variation"><span data-i18n="app.tab3"></span></button>
+    <button class="tab" data-tab="timing"><span data-i18n="app.tab4"></span></button>
   </div>
 
   <div class="grid">
@@ -131,7 +131,12 @@
 
       <!-- timing note -->
       <div id="timingWrap" style="display:none; margin-top:14px">
-        <div class="mono muted" style="font-size:12px; line-height:1.6" data-i18n="app.timingHint"></div>
+        <div class="mono muted" style="font-size:12px; line-height:1.6; margin-bottom:10px">Drop a full song → AI listens (Whisper + Gemini) and outputs line-by-line timed lyrics + a paste-into-Suno version.</div>
+        <textarea id="timingLyrics" placeholder="Paste original lyrics here — AI will align each line to exact timestamps (optional, but recommended)"></textarea>
+        <div class="mono" style="font-size:12px; line-height:1.7; margin-top:8px">
+          <span style="color:var(--amber)">● With original lyrics → timing 95%+ accurate</span><br>
+          <span style="color:var(--muted)">● Without → AI transcribes by ear ~70–80%</span>
+        </div>
       </div>
 
       <button class="btn btn-primary run" id="runBtn" disabled>

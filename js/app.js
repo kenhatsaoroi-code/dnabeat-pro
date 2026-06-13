@@ -523,6 +523,7 @@ async function runTiming() {
         mime: state.file.type || "audio/mpeg",
         lang: I18N.lang,
         dsp: state.dsp,
+        userLyrics: ($("timingLyrics")?.value || "").trim().slice(0, 8000),
       }),
     });
 
