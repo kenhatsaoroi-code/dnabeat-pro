@@ -1,17 +1,13 @@
-// =====================================================================
-// auth.js — Supabase client + Google OAuth helpers.
-// Requires config.js + the Supabase UMD bundle to be loaded first.
-// =====================================================================
-const cfg = window.DNABEAT_CONFIG;
-const supabase = window.supabase.createClient(
+﻿const cfg = window.DNABEAT_CONFIG;
+const sb = window.supabase.createClient(
   cfg.SUPABASE_URL,
   cfg.SUPABASE_ANON_KEY
 );
-window.sb = supabase;
+window.sb = sb;
 
 const Auth = {
   async getSession() {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await sb.auth.getSession();
     return data.session || null;
   },
   async getToken() {
@@ -21,19 +17,18 @@ const Auth = {
   async loginGoogle(redirectPath) {
     const redirectTo =
       window.location.origin + (redirectPath || cfg.APP_PATH || "/app");
-    await supabase.auth.signInWithOAuth({
+    await sb.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo },
     });
   },
   async logout() {
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     window.location.href = "/";
   },
   onChange(cb) {
-    supabase.auth.onAuthStateChange((_e, session) => cb(session));
+    sb.auth.onAuthStateChange((_e, session) => cb(session));
   },
-  // Authenticated fetch to our /api/* routes.
   async api(path, options = {}) {
     const token = await this.getToken();
     const headers = Object.assign(
