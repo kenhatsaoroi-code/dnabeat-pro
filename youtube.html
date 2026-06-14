@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VidTrending — YouTube pre-publish analyzer · DNAbeat.pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css" />
+<style>
+  :root{ --yt:#FF1E3C; --yt2:#FF5B7A; }
+  body{ background:
+    radial-gradient(900px 600px at 88% -5%, rgba(255,30,60,.18), transparent 60%),
+    radial-gradient(800px 600px at 5% 105%, rgba(255,91,122,.12), transparent 60%),
+    linear-gradient(165deg,#120406 0%,#190509 60%,#1E060B 100%); }
+  .wrap2{ max-width:1100px; margin:0 auto; padding:0 22px; }
+  .ytgrad{ background:linear-gradient(135deg,var(--yt),var(--yt2)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .panel2{ background:var(--panel); border:1px solid var(--line); border-radius:var(--r-lg); padding:22px; }
+  .drop{ border:1.5px dashed var(--line); border-radius:var(--r); padding:26px; text-align:center; cursor:pointer; transition:.2s; }
+  .drop:hover,.drop.drag{ border-color:var(--yt); background:rgba(255,30,60,.06); }
+  input.f,textarea.f{ width:100%; background:#0c0406; border:1px solid var(--line); border-radius:12px; color:var(--ink); padding:12px 14px; font-family:var(--font-body); font-size:14px; margin-top:8px; }
+  textarea.f{ min-height:90px; resize:vertical; }
+  .btn-yt{ background:linear-gradient(135deg,var(--yt),var(--yt2)); color:#fff; border:none; border-radius:999px; padding:14px; width:100%; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 14px 40px -12px rgba(255,30,60,.7); }
+  .btn-yt:disabled{ opacity:.5; cursor:not-allowed; }
+  .ring{ --p:0; width:96px; height:96px; border-radius:50%; display:grid; place-items:center;
+    background:conic-gradient(var(--yt) calc(var(--p)*1%), #2a1014 0); }
+  .ring .in{ width:78px; height:78px; border-radius:50%; background:var(--panel); display:grid; place-items:center; font-family:var(--font-display); font-weight:800; font-size:24px; }
+  .score-row{ display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+  .chip2{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-family:var(--font-mono); border:1px solid var(--line); }
+  .sev-critical{ color:#FF6B6B; border-color:rgba(255,107,107,.4); }
+  .sev-warning{ color:#FFB23E; border-color:rgba(255,178,62,.4); }
+  .sev-good,.sev-info{ color:#22E5C9; border-color:rgba(34,229,201,.4); }
+  .block{ margin-bottom:18px; }
+  .block h3{ font-size:16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .issue{ border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .issue .fixes{ margin-top:6px; font-size:13px; color:var(--ink-soft); }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  @media(max-width:820px){ .grid2{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+
+<nav class="nav"><div class="wrap nav-inner">
+  <a class="logo" href="/">
+    <span class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4c6 4 8 8 14 16M5 20c6-4 8-8 14-16" stroke="#0A0814" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+    DNAbeat<span class="grad-text">.pro</span>
+  </a>
+  <div class="nav-links">
+    <a href="/app">Music Tool</a>
+    <span id="quota" class="chip2"></span>
+    <button class="btn btn-ghost" id="logout">Sign out</button>
+  </div>
+</div></nav>
+
+<main class="wrap2" style="padding-top:30px; padding-bottom:60px">
+  <span class="eyebrow" style="color:var(--yt)">▶ VIDTRENDING · YOUTUBE PRE-PUBLISH</span>
+  <h1 style="font-size:clamp(26px,3.4vw,40px); margin:10px 0 6px">Analyze your video <span class="ytgrad">before</span> you publish</h1>
+  <p class="muted" style="margin-bottom:24px">Score your thumbnail, title &amp; description with real AI. Video frame/audio analysis stays in the desktop app.</p>
+
+  <div class="grid2">
+    <!-- INPUT -->
+    <div class="panel2">
+      <div class="mono muted" style="font-size:12px;margin-bottom:8px">THUMBNAIL</div>
+      <div class="drop" id="thumbDrop">
+        <div id="thumbPreview"></div>
+        <div id="thumbHint">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style="margin-bottom:6px"><path d="M12 16V4m0 0L8 8m4-4l4 4M5 20h14" stroke="#FF1E3C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div style="font-weight:600;font-size:14px">Drop thumbnail (JPG/PNG)</div>
+          <div class="mono muted" style="font-size:11px;margin-top:4px">or click to choose</div>
+        </div>
+        <input type="file" id="thumbInput" accept="image/*" hidden />
+      </div>
+
+      <div class="mono muted" style="font-size:12px;margin:16px 0 0">TITLE</div>
+      <input class="f" id="vtitle" placeholder="Your video title..." maxlength="300" />
+
+      <div class="mono muted" style="font-size:12px;margin:16px 0 0">DESCRIPTION</div>
+      <textarea class="f" id="vdesc" placeholder="Your video description..."></textarea>
+
+      <button class="btn-yt" id="analyzeBtn" style="margin-top:18px" disabled>Scan Now</button>
+    </div>
+
+    <!-- RESULT -->
+    <div class="panel2" id="resultPanel">
+      <div class="muted" style="text-align:center; padding:60px 10px" id="resultEmpty">Add a thumbnail + title and hit Scan Now.</div>
+      <div id="result" style="display:none"></div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/fx.js"></script>
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  let thumb = null, busy = false;
+
+  // auth guard
+  Auth.getSession().then(s => { if (!s) window.location.href = "/"; else refreshQuota(); });
+  $("logout").onclick = () => Auth.logout();
+
+  async function refreshQuota(){
+    try {
+      const { ok, data } = await Auth.api("/api/usage", { method:"GET" });
+      if (ok && data) {
+        $("quota").textContent = data.premium ? "PREMIUM · ∞" : `Left today: ${data.remaining}/${data.limit}`;
+      }
+    } catch(_){}
+  }
+
+  function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),3000); }
+
+  // thumbnail upload
+  const dz = $("thumbDrop"), fi = $("thumbInput");
+  dz.onclick = () => fi.click();
+  fi.onchange = e => e.target.files[0] && loadThumb(e.target.files[0]);
+  ["dragover","dragenter"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag");}));
+  ["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag");}));
+  dz.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) loadThumb(f); });
+
+  function loadThumb(file){
+    const r = new FileReader();
+    r.onload = () => {
+      const b64 = r.result.split(",")[1];
+      thumb = { mime: file.type || "image/jpeg", data: b64 };
+      $("thumbHint").style.display = "none";
+      $("thumbPreview").innerHTML = `<img src="${r.result}" style="max-width:100%;border-radius:10px"/>`;
+      updateBtn();
+    };
+    r.readAsDataURL(file);
+  }
+
+  $("vtitle").oninput = updateBtn;
+  function updateBtn(){ $("analyzeBtn").disabled = busy || (!thumb && !$("vtitle").value.trim()); }
+
+  $("analyzeBtn").onclick = async () => {
+    if (busy) return;
+    busy = true; updateBtn();
+    const btn = $("analyzeBtn"); const old = btn.textContent;
+    btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+
+    const { ok, status, data } = await Auth.api("/api/youtube", {
+      method:"POST",
+      body: JSON.stringify({
+        lang: "en",
+        title: $("vtitle").value,
+        desc: $("vdesc").value,
+        thumb: thumb || undefined,
+      }),
+    });
+
+    busy = false; btn.textContent = old; updateBtn();
+
+    if (!ok) { toast((data && data.message) || "Analysis failed, try again"); return; }
+    render(data.analysis);
+    refreshQuota();
+  };
+
+  function ring(score){
+    return `<div class="ring" style="--p:${score}"><div class="in">${score}</div></div>`;
+  }
+  function sev(s){ return `<span class="chip2 sev-${s}">${s}</span>`; }
+
+  function render(a){
+    $("resultEmpty").style.display = "none";
+    const r = $("result"); r.style.display = "block";
+    let h = "";
+    h += `<div class="score-row block">${ring(a.overall||0)}<div><div style="font-family:var(--font-display);font-weight:700;font-size:18px">Overall ${a.overall||0}/100</div><div class="muted" style="font-size:14px;margin-top:4px">${a.summary||""}</div></div></div>`;
+
+    if (a.thumbnail){
+      h += `<div class="block"><h3>Thumbnail <span class="ytgrad">${a.thumbnail.score||0}</span></h3>`;
+      (a.thumbnail.issues||[]).forEach(i=>{
+        h += `<div class="issue"><div style="display:flex;justify-content:space-between;gap:8px"><strong>${i.area||""}</strong>${sev(i.status||"info")}</div><div style="margin-top:4px;font-size:14px">${i.msg||""}</div>`;
+        if(i.fixes&&i.fixes.length) h += `<div class="fixes">→ ${i.fixes.join("<br>→ ")}</div>`;
+        h += `</div>`;
+      });
+      h += `</div>`;
+    }
+
+    if (a.title){
+      h += `<div class="block"><h3>Title <span class="ytgrad">${a.title.score||0}</span></h3>`;
+      (a.title.checks||[]).forEach(c=>{
+        h += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:14px"><span style="color:${c.pass?'#22E5C9':'#FF6B6B'}">${c.pass?'✓':'✗'}</span><strong>${c.label}</strong> <span class="muted">${c.detail||""}</span></div>`;
+      });
+      if(a.title.suggestions&&a.title.suggestions.length){
+        h += `<div style="margin-top:10px"><div class="mono muted" style="font-size:12px;margin-bottom:6px">SUGGESTED TITLES</div>`;
+        a.title.suggestions.forEach(s=>{ h += `<div class="issue" style="padding:8px 12px">${s}</div>`; });
+        h += `</div>`;
+      }
+      h += `</div>`;
+    }
+
+    if (a.description){
+      h += `<div class="block"><h3>Description <span class="ytgrad">${a.description.score||0}</span></h3>`;
+      (a.description.suggestions||[]).forEach(s=>{ h += `<div class="issue" style="padding:8px 12px">${s}</div>`; });
+      h += `</div>`;
+    }
+
+    if (a.market){
+      h += `<div class="block"><h3>Market</h3><div class="muted" style="font-size:14px">Est. views: <strong>${a.market.estimatedViews||"—"}</strong> · Best time: <strong>${a.market.bestTime||"—"}</strong></div>`;
+      (a.market.countries||[]).forEach(c=>{ h += `<span class="chip2" style="margin:6px 6px 0 0">${c.flag||""} ${c.name||""} ${c.cpm||""}</span>`; });
+      h += `</div>`;
+    }
+
+    r.innerHTML = h;
+  }
+})();
+</script>
+</body>
+</html>

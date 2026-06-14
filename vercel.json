@@ -5,11 +5,13 @@
   "functions": {
     "api/analyze.js": { "maxDuration": 60 },
     "api/timing.js": { "maxDuration": 60 },
+    "api/youtube.js": { "maxDuration": 60 },
     "api/usage.js": { "maxDuration": 10 },
     "api/paypal-webhook.js": { "maxDuration": 15 }
   },
   "rewrites": [
-    { "source": "/app", "destination": "/app.html" }
+    { "source": "/app", "destination": "/app.html" },
+    { "source": "/youtube", "destination": "/youtube.html" }
   ],
   "headers": [
     {
