@@ -10,7 +10,7 @@ const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
 const MAX_IMG_BYTES = 4 * 1024 * 1024;
 
-const SYS =
+const SYS_VIDEO =
   "You are VidTrending, a YouTube pre-publish analyzer. You receive a thumbnail image, a title and a description. " +
   "Analyze SPECIFICALLY for THIS video — if the title is weak or clickbait-empty, score it low. " +
   "Return ONLY valid minified JSON (no markdown, no backticks) with this exact shape:\n" +
@@ -20,6 +20,26 @@ const SYS =
   '"description":{"score":<0-100>,"issues":["<i1>"],"suggestions":["<s1>","<s2>"]},' +
   '"market":{"estimatedViews":"<range>","bestTime":"<when>","countries":[{"flag":"<emoji>","name":"<country>","cpm":"<$X.XX>"}]}}' +
   "\nGive 3+ thumbnail issues, all 6 title checks, 3 title suggestions, 3+ countries. Be honest.";
+
+const SYS_TRENDS =
+  "You are a YouTube Shorts trend strategist. Given a niche or title, return what is working RIGHT NOW for Shorts in that space. " +
+  "Return ONLY valid minified JSON (no markdown) with this exact shape:\n" +
+  '{"niche":"<detected niche>","trendScore":<0-100>,"summary":"<1-2 sentences>",' +
+  '"formats":[{"name":"<trending format/angle>","why":"<why it works now>"}],' +
+  '"hooks":["<ready-to-use 3s hook line>","<hook2>","<hook3>"],' +
+  '"hashtags":["#tag1","#tag2"],' +
+  '"postingTips":["<tip1>","<tip2>"],"bestLength":"<e.g. 21-34s>","bestTime":"<when to post>"}' +
+  "\nGive 4+ formats, 4+ hooks, 12+ SEO hashtags, 3+ tips. Be specific and current.";
+
+const SYS_VIRAL =
+  "You are a YouTube Shorts viral-hook analyst. You receive the FIRST ~3 SECONDS of a Short as a sequence of video frames (in order) plus the creator's title. " +
+  "Judge how likely the first 3 seconds are to STOP THE SCROLL and go viral. Be brutally honest — most hooks are weak. " +
+  "Return ONLY valid minified JSON (no markdown) with this exact shape:\n" +
+  '{"viralScore":<0-100>,"verdict":"<1-2 sentences on the 3s hook>",' +
+  '"hookBreakdown":[{"t":"<0.0s|1.0s|2.0s|3.0s>","msg":"<what is happening / impact on retention>"}],' +
+  '"fixes":[{"priority":"<critical|high|medium>","msg":"<specific change to the first 3s>"}],' +
+  '"hashtags":["#tag1","#tag2"],"caption":"<short punchy caption matching the title>"}' +
+  "\nGive a breakdown for each frame, 3+ fixes, and 12+ SEO hashtags that match the TITLE and niche. Be honest about low scores.";
 
 export default async function handler(req, res) {
   cors(res);
@@ -35,11 +55,18 @@ export default async function handler(req, res) {
     const premium = isPremium(profile);
     const body = await readJson(req);
     const lang = body.lang === "vi" ? "vi" : "en";
+    const mode = ["short_trends", "short_viral"].includes(body.mode) ? body.mode : "video";
     const title = String(body.title || "").slice(0, 300);
     const desc = String(body.desc || "").slice(0, 4000);
 
-    if (!title && !body.thumb) {
+    if (mode === "video" && !title && !body.thumb) {
       return res.status(400).json({ error: "need_input", message: "Provide at least a title or a thumbnail." });
+    }
+    if (mode === "short_trends" && !title) {
+      return res.status(400).json({ error: "need_input", message: "Enter a niche or title." });
+    }
+    if (mode === "short_viral" && !(Array.isArray(body.frames) && body.frames.length)) {
+      return res.status(400).json({ error: "need_input", message: "Upload a short video to scan its first 3 seconds." });
     }
 
     if (!premium) {
@@ -52,19 +79,35 @@ export default async function handler(req, res) {
       }
     }
 
+    const langNote = lang === "vi" ? "\nWrite all human-readable text in Vietnamese." : "";
     const parts = [];
-    if (body.thumb?.data && body.thumb?.mime) {
-      const approx = Math.floor((body.thumb.data.length * 3) / 4);
-      if (approx <= MAX_IMG_BYTES) {
-        parts.push({ inlineData: { mimeType: body.thumb.mime, data: body.thumb.data } });
+    let SYS;
+
+    if (mode === "short_trends") {
+      SYS = SYS_TRENDS;
+      parts.push({ text: `Niche / title: ${title}\nDescription: ${desc || "(none)"}${langNote}` });
+    } else if (mode === "short_viral") {
+      SYS = SYS_VIRAL;
+      const frames = body.frames.slice(0, 6);
+      for (const f of frames) {
+        if (f?.data && f?.mime) {
+          const approx = Math.floor((f.data.length * 3) / 4);
+          if (approx <= MAX_IMG_BYTES) parts.push({ inlineData: { mimeType: f.mime, data: f.data } });
+        }
       }
+      parts.push({ text: `These are the first ~3 seconds of a Short, in order. TITLE: ${title || "(none)"}\nRate the hook and give SEO hashtags matching the title.${langNote}` });
+    } else {
+      SYS = SYS_VIDEO;
+      if (body.thumb?.data && body.thumb?.mime) {
+        const approx = Math.floor((body.thumb.data.length * 3) / 4);
+        if (approx <= MAX_IMG_BYTES) parts.push({ inlineData: { mimeType: body.thumb.mime, data: body.thumb.data } });
+      }
+      parts.push({
+        text:
+          `Analyze this YouTube video.\nTITLE: ${title || "(none)"}\nDESCRIPTION: ${desc || "(none)"}\n` +
+          (body.thumb ? "A thumbnail image is attached." : "No thumbnail attached — score thumbnail 0 and flag it.") + langNote,
+      });
     }
-    parts.push({
-      text:
-        `Analyze this YouTube video.\nTITLE: ${title || "(none)"}\nDESCRIPTION: ${desc || "(none)"}\n` +
-        (body.thumb ? "A thumbnail image is attached." : "No thumbnail attached — score thumbnail 0 and flag it.") +
-        (lang === "vi" ? "\nWrite all msg/detail/summary/fixes/suggestions text in Vietnamese." : ""),
-    });
 
     const payload = {
       systemInstruction: { parts: [{ text: SYS }] },
@@ -85,7 +128,7 @@ export default async function handler(req, res) {
 
     if (!premium) { try { await bumpUsage(user.id); } catch (_) {} }
 
-    return res.status(200).json({ ok: true, model: result.model, analysis: data });
+    return res.status(200).json({ ok: true, mode, model: result.model, analysis: data });
   } catch (e) {
     console.error("youtube error", e);
     return res.status(500).json({ error: "server_error" });

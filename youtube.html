@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>VidTrending — YouTube pre-publish analyzer · DNAbeat.pro</title>
+<title>VidTrending — YouTube + Shorts analyzer · DNAbeat.pro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css" />
@@ -22,19 +22,22 @@
   textarea.f{ min-height:90px; resize:vertical; }
   .btn-yt{ background:linear-gradient(135deg,var(--yt),var(--yt2)); color:#fff; border:none; border-radius:999px; padding:14px; width:100%; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 14px 40px -12px rgba(255,30,60,.7); }
   .btn-yt:disabled{ opacity:.5; cursor:not-allowed; }
-  .ring{ --p:0; width:96px; height:96px; border-radius:50%; display:grid; place-items:center;
-    background:conic-gradient(var(--yt) calc(var(--p)*1%), #2a1014 0); }
+  .ytabs{ display:flex; gap:8px; margin:22px 0 18px; flex-wrap:wrap; }
+  .ytab{ padding:10px 18px; border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--ink-soft); cursor:pointer; font-weight:600; font-size:14px; }
+  .ytab.on{ background:linear-gradient(135deg,var(--yt),var(--yt2)); color:#fff; border-color:transparent; }
+  .ring{ --p:0; width:96px; height:96px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--yt) calc(var(--p)*1%), #2a1014 0); }
   .ring .in{ width:78px; height:78px; border-radius:50%; background:var(--panel); display:grid; place-items:center; font-family:var(--font-display); font-weight:800; font-size:24px; }
   .score-row{ display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
-  .chip2{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-family:var(--font-mono); border:1px solid var(--line); }
-  .sev-critical{ color:#FF6B6B; border-color:rgba(255,107,107,.4); }
-  .sev-warning{ color:#FFB23E; border-color:rgba(255,178,62,.4); }
-  .sev-good,.sev-info{ color:#22E5C9; border-color:rgba(34,229,201,.4); }
+  .chip2{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-family:var(--font-mono); border:1px solid var(--line); margin:4px 6px 0 0; }
+  .sev-critical,.priority-critical{ color:#FF6B6B; border-color:rgba(255,107,107,.4); }
+  .sev-warning,.priority-high{ color:#FFB23E; border-color:rgba(255,178,62,.4); }
+  .sev-good,.sev-info,.priority-medium{ color:#22E5C9; border-color:rgba(34,229,201,.4); }
   .block{ margin-bottom:18px; }
   .block h3{ font-size:16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
   .issue{ border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
   .issue .fixes{ margin-top:6px; font-size:13px; color:var(--ink-soft); }
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .tag{ display:inline-block; padding:5px 11px; border-radius:8px; background:rgba(255,30,60,.12); border:1px solid rgba(255,30,60,.3); color:#FF8FA3; font-size:13px; font-family:var(--font-mono); margin:4px 6px 0 0; cursor:pointer; }
   @media(max-width:820px){ .grid2{ grid-template-columns:1fr; } }
 </style>
 </head>
@@ -54,36 +57,70 @@
 </div></nav>
 
 <main class="wrap2" style="padding-top:30px; padding-bottom:60px">
-  <span class="eyebrow" style="color:var(--yt)">▶ VIDTRENDING · YOUTUBE PRE-PUBLISH</span>
-  <h1 style="font-size:clamp(26px,3.4vw,40px); margin:10px 0 6px">Analyze your video <span class="ytgrad">before</span> you publish</h1>
-  <p class="muted" style="margin-bottom:24px">Score your thumbnail, title &amp; description with real AI. Video frame/audio analysis stays in the desktop app.</p>
+  <span class="eyebrow" style="color:var(--yt)">▶ VIDTRENDING · YOUTUBE + SHORTS</span>
+  <h1 style="font-size:clamp(26px,3.4vw,40px); margin:10px 0 6px">Analyze <span class="ytgrad">before</span> you publish</h1>
+  <p class="muted" style="margin:0">Score videos, ride Shorts trends, and scan your first 3 seconds for viral potential.</p>
+
+  <div class="ytabs">
+    <div class="ytab on" data-tab="video">Video / Thumbnail</div>
+    <div class="ytab" data-tab="trends">Shorts Trends</div>
+    <div class="ytab" data-tab="viral">Shorts Viral Scan</div>
+  </div>
 
   <div class="grid2">
     <!-- INPUT -->
     <div class="panel2">
-      <div class="mono muted" style="font-size:12px;margin-bottom:8px">THUMBNAIL</div>
-      <div class="drop" id="thumbDrop">
-        <div id="thumbPreview"></div>
-        <div id="thumbHint">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style="margin-bottom:6px"><path d="M12 16V4m0 0L8 8m4-4l4 4M5 20h14" stroke="#FF1E3C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div style="font-weight:600;font-size:14px">Drop thumbnail (JPG/PNG)</div>
-          <div class="mono muted" style="font-size:11px;margin-top:4px">or click to choose</div>
+      <!-- TAB: video -->
+      <div id="in-video">
+        <div class="mono muted" style="font-size:12px;margin-bottom:8px">THUMBNAIL</div>
+        <div class="drop" id="thumbDrop">
+          <div id="thumbPreview"></div>
+          <div id="thumbHint">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style="margin-bottom:6px"><path d="M12 16V4m0 0L8 8m4-4l4 4M5 20h14" stroke="#FF1E3C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="font-weight:600;font-size:14px">Drop thumbnail (JPG/PNG)</div>
+            <div class="mono muted" style="font-size:11px;margin-top:4px">or click to choose</div>
+          </div>
+          <input type="file" id="thumbInput" accept="image/*" hidden />
         </div>
-        <input type="file" id="thumbInput" accept="image/*" hidden />
+        <div class="mono muted" style="font-size:12px;margin:16px 0 0">TITLE</div>
+        <input class="f" id="vtitle" placeholder="Your video title..." maxlength="300" />
+        <div class="mono muted" style="font-size:12px;margin:16px 0 0">DESCRIPTION</div>
+        <textarea class="f" id="vdesc" placeholder="Your video description..."></textarea>
       </div>
 
-      <div class="mono muted" style="font-size:12px;margin:16px 0 0">TITLE</div>
-      <input class="f" id="vtitle" placeholder="Your video title..." maxlength="300" />
+      <!-- TAB: trends -->
+      <div id="in-trends" style="display:none">
+        <div class="mono" style="font-size:12px;color:var(--yt);margin-bottom:8px">SHORTS TREND ANALYSIS</div>
+        <div class="mono muted" style="font-size:12px;margin:6px 0 0">NICHE OR TITLE</div>
+        <input class="f" id="ttitle" placeholder="e.g. AI tools / cooking hacks / your Short title..." maxlength="300" />
+        <div class="mono muted" style="font-size:12px;margin:16px 0 0">DETAILS (optional)</div>
+        <textarea class="f" id="tdesc" placeholder="Audience, style, language..."></textarea>
+        <div class="mono muted" style="font-size:11px;margin-top:10px">AI returns trending formats, ready-to-use hooks, SEO hashtags & posting tips for Shorts in this niche.</div>
+      </div>
 
-      <div class="mono muted" style="font-size:12px;margin:16px 0 0">DESCRIPTION</div>
-      <textarea class="f" id="vdesc" placeholder="Your video description..."></textarea>
+      <!-- TAB: viral -->
+      <div id="in-viral" style="display:none">
+        <div class="mono" style="font-size:12px;color:var(--yt);margin-bottom:8px">FIRST-3-SECONDS VIRAL SCAN</div>
+        <div class="drop" id="vidDrop">
+          <div id="vidPreview"></div>
+          <div id="vidHint">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style="margin-bottom:6px"><path d="M4 6h16v12H4zM10 9l5 3-5 3z" stroke="#FF1E3C" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            <div style="font-weight:600;font-size:14px">Drop your Short video (MP4/MOV)</div>
+            <div class="mono muted" style="font-size:11px;margin-top:4px">we scan the first 3 seconds in your browser</div>
+          </div>
+          <input type="file" id="vidInput" accept="video/*" hidden />
+        </div>
+        <div class="mono muted" style="font-size:12px;margin:16px 0 0">TITLE (for SEO hashtags)</div>
+        <input class="f" id="rtitle" placeholder="Your Short title..." maxlength="300" />
+        <div id="frameStrip" style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"></div>
+      </div>
 
       <button class="btn-yt" id="analyzeBtn" style="margin-top:18px" disabled>Scan Now</button>
     </div>
 
     <!-- RESULT -->
     <div class="panel2" id="resultPanel">
-      <div class="muted" style="text-align:center; padding:60px 10px" id="resultEmpty">Add a thumbnail + title and hit Scan Now.</div>
+      <div class="muted" style="text-align:center; padding:60px 10px" id="resultEmpty">Pick a tab, add input, hit Scan Now.</div>
       <div id="result" style="display:none"></div>
     </div>
   </div>
@@ -98,116 +135,138 @@
 <script>
 (function(){
   const $ = (id) => document.getElementById(id);
-  let thumb = null, busy = false;
+  let tab = "video", thumb = null, frames = [], busy = false;
 
-  // auth guard
   Auth.getSession().then(s => { if (!s) window.location.href = "/"; else refreshQuota(); });
   $("logout").onclick = () => Auth.logout();
 
   async function refreshQuota(){
-    try {
-      const { ok, data } = await Auth.api("/api/usage", { method:"GET" });
-      if (ok && data) {
-        $("quota").textContent = data.premium ? "PREMIUM · ∞" : `Left today: ${data.remaining}/${data.limit}`;
-      }
+    try { const { ok, data } = await Auth.api("/api/usage", { method:"GET" });
+      if (ok && data) $("quota").textContent = data.premium ? "PREMIUM · ∞" : `Left today: ${data.remaining}/${data.limit}`;
     } catch(_){}
   }
+  function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),3200); }
 
-  function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),3000); }
-
-  // thumbnail upload
-  const dz = $("thumbDrop"), fi = $("thumbInput");
-  dz.onclick = () => fi.click();
-  fi.onchange = e => e.target.files[0] && loadThumb(e.target.files[0]);
-  ["dragover","dragenter"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag");}));
-  ["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag");}));
-  dz.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) loadThumb(f); });
-
-  function loadThumb(file){
-    const r = new FileReader();
-    r.onload = () => {
-      const b64 = r.result.split(",")[1];
-      thumb = { mime: file.type || "image/jpeg", data: b64 };
-      $("thumbHint").style.display = "none";
-      $("thumbPreview").innerHTML = `<img src="${r.result}" style="max-width:100%;border-radius:10px"/>`;
+  // tabs
+  document.querySelectorAll(".ytab").forEach(b=>{
+    b.onclick=()=>{
+      document.querySelectorAll(".ytab").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on"); tab=b.dataset.tab;
+      $("in-video").style.display = tab==="video"?"block":"none";
+      $("in-trends").style.display = tab==="trends"?"block":"none";
+      $("in-viral").style.display = tab==="viral"?"block":"none";
+      $("analyzeBtn").textContent = tab==="trends"?"Find Trends":(tab==="viral"?"Scan Viral Hook":"Scan Now");
       updateBtn();
     };
-    r.readAsDataURL(file);
+  });
+
+  // thumbnail
+  wireDrop("thumbDrop","thumbInput", f=>{
+    const r=new FileReader(); r.onload=()=>{ thumb={mime:f.type||"image/jpeg",data:r.result.split(",")[1]};
+      $("thumbHint").style.display="none"; $("thumbPreview").innerHTML=`<img src="${r.result}" style="max-width:100%;border-radius:10px"/>`; updateBtn(); };
+    r.readAsDataURL(f);
+  });
+  // video
+  wireDrop("vidDrop","vidInput", async f=>{
+    $("vidHint").style.display="none";
+    $("vidPreview").innerHTML=`<div class="mono muted" style="font-size:12px">⏳ ${f.name} — extracting first 3s...</div>`;
+    $("frameStrip").innerHTML="";
+    try {
+      frames = await extractFrames(f);
+      $("vidPreview").innerHTML=`<div class="mono" style="font-size:12px;color:#22E5C9">✓ ${f.name} — ${frames.length} frames grabbed</div>`;
+      frames.forEach(fr=>{ const im=document.createElement("img"); im.src="data:image/jpeg;base64,"+fr.data; im.style.cssText="width:64px;height:auto;border-radius:6px"; $("frameStrip").appendChild(im); });
+    } catch(e){ $("vidPreview").innerHTML=`<div class="mono" style="font-size:12px;color:#FF6B6B">✗ ${e.message}</div>`; }
+    updateBtn();
+  });
+
+  function wireDrop(dzId,fiId,handler){
+    const dz=$(dzId), fi=$(fiId); if(!dz)return;
+    dz.onclick=()=>fi.click(); fi.onchange=e=>e.target.files[0]&&handler(e.target.files[0]);
+    ["dragover","dragenter"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag");}));
+    ["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag");}));
+    dz.addEventListener("drop",e=>{const f=e.dataTransfer.files[0]; if(f)handler(f);});
   }
 
-  $("vtitle").oninput = updateBtn;
-  function updateBtn(){ $("analyzeBtn").disabled = busy || (!thumb && !$("vtitle").value.trim()); }
+  // extract first-3s frames client-side (no ffmpeg)
+  function extractFrames(file){
+    return new Promise((resolve,reject)=>{
+      const v=document.createElement("video"); v.preload="auto"; v.muted=true; v.playsInline=true;
+      v.src=URL.createObjectURL(file);
+      const times=[0.3,1.0,2.0,3.0], out=[];
+      v.onerror=()=>reject(new Error("Cannot read this video file"));
+      v.onloadedmetadata=async()=>{
+        const dur=v.duration||3, cv=document.createElement("canvas");
+        const grab=(t)=>new Promise(res=>{
+          v.onseeked=()=>{
+            const w=Math.min(480, v.videoWidth||480), sc=w/(v.videoWidth||480);
+            cv.width=w; cv.height=Math.round((v.videoHeight||480)*sc);
+            cv.getContext("2d").drawImage(v,0,0,cv.width,cv.height);
+            out.push({mime:"image/jpeg",data:cv.toDataURL("image/jpeg",0.7).split(",")[1]}); res();
+          };
+          v.currentTime=Math.min(t,Math.max(0,dur-0.05));
+        });
+        for(const t of times){ if(t<=dur+0.2) await grab(t); }
+        URL.revokeObjectURL(v.src);
+        out.length?resolve(out):reject(new Error("No frames extracted"));
+      };
+    });
+  }
+
+  ["vtitle","ttitle","rtitle"].forEach(id=>$(id)&&($(id).oninput=updateBtn));
+  function updateBtn(){
+    let ok=false;
+    if(tab==="video") ok = !!thumb || !!$("vtitle").value.trim();
+    else if(tab==="trends") ok = !!$("ttitle").value.trim();
+    else if(tab==="viral") ok = frames.length>0;
+    $("analyzeBtn").disabled = busy || !ok;
+  }
 
   $("analyzeBtn").onclick = async () => {
-    if (busy) return;
-    busy = true; updateBtn();
-    const btn = $("analyzeBtn"); const old = btn.textContent;
-    btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+    if (busy) return; busy=true; updateBtn();
+    const btn=$("analyzeBtn"), old=btn.textContent;
+    btn.innerHTML='<span class="spinner"></span> Analyzing...';
 
-    const { ok, status, data } = await Auth.api("/api/youtube", {
-      method:"POST",
-      body: JSON.stringify({
-        lang: "en",
-        title: $("vtitle").value,
-        desc: $("vdesc").value,
-        thumb: thumb || undefined,
-      }),
-    });
+    let payload={ lang:"en" };
+    if(tab==="video") payload={...payload, mode:"video", title:$("vtitle").value, desc:$("vdesc").value, thumb:thumb||undefined};
+    else if(tab==="trends") payload={...payload, mode:"short_trends", title:$("ttitle").value, desc:$("tdesc").value};
+    else payload={...payload, mode:"short_viral", title:$("rtitle").value, frames};
 
-    busy = false; btn.textContent = old; updateBtn();
-
-    if (!ok) { toast((data && data.message) || "Analysis failed, try again"); return; }
-    render(data.analysis);
-    refreshQuota();
+    const { ok, data } = await Auth.api("/api/youtube", { method:"POST", body:JSON.stringify(payload) });
+    busy=false; btn.textContent=old; updateBtn();
+    if(!ok){ toast((data&&data.message)||"Analysis failed, try again"); return; }
+    render(tab, data.analysis); refreshQuota();
   };
 
-  function ring(score){
-    return `<div class="ring" style="--p:${score}"><div class="in">${score}</div></div>`;
-  }
-  function sev(s){ return `<span class="chip2 sev-${s}">${s}</span>`; }
+  function ring(s){ return `<div class="ring" style="--p:${s||0}"><div class="in">${s||0}</div></div>`; }
+  function tags(arr){ return (arr||[]).map(t=>`<span class="tag" onclick="navigator.clipboard&&navigator.clipboard.writeText('${(t||'').replace(/'/g,'')}')">${t}</span>`).join(""); }
 
-  function render(a){
-    $("resultEmpty").style.display = "none";
-    const r = $("result"); r.style.display = "block";
-    let h = "";
-    h += `<div class="score-row block">${ring(a.overall||0)}<div><div style="font-family:var(--font-display);font-weight:700;font-size:18px">Overall ${a.overall||0}/100</div><div class="muted" style="font-size:14px;margin-top:4px">${a.summary||""}</div></div></div>`;
-
-    if (a.thumbnail){
-      h += `<div class="block"><h3>Thumbnail <span class="ytgrad">${a.thumbnail.score||0}</span></h3>`;
-      (a.thumbnail.issues||[]).forEach(i=>{
-        h += `<div class="issue"><div style="display:flex;justify-content:space-between;gap:8px"><strong>${i.area||""}</strong>${sev(i.status||"info")}</div><div style="margin-top:4px;font-size:14px">${i.msg||""}</div>`;
-        if(i.fixes&&i.fixes.length) h += `<div class="fixes">→ ${i.fixes.join("<br>→ ")}</div>`;
-        h += `</div>`;
-      });
-      h += `</div>`;
+  function render(mode,a){
+    $("resultEmpty").style.display="none"; const r=$("result"); r.style.display="block"; let h="";
+    if(mode==="video"){
+      h+=`<div class="score-row block">${ring(a.overall)}<div><div style="font-family:var(--font-display);font-weight:700;font-size:18px">Overall ${a.overall||0}/100</div><div class="muted" style="font-size:14px;margin-top:4px">${a.summary||""}</div></div></div>`;
+      if(a.thumbnail){ h+=`<div class="block"><h3>Thumbnail <span class="ytgrad">${a.thumbnail.score||0}</span></h3>`;
+        (a.thumbnail.issues||[]).forEach(i=>{ h+=`<div class="issue"><div style="display:flex;justify-content:space-between"><strong>${i.area||""}</strong><span class="chip2 sev-${i.status||'info'}">${i.status||''}</span></div><div style="margin-top:4px;font-size:14px">${i.msg||""}</div>${i.fixes&&i.fixes.length?`<div class="fixes">→ ${i.fixes.join("<br>→ ")}</div>`:""}</div>`; }); h+=`</div>`; }
+      if(a.title){ h+=`<div class="block"><h3>Title <span class="ytgrad">${a.title.score||0}</span></h3>`;
+        (a.title.checks||[]).forEach(c=>{ h+=`<div style="font-size:14px;margin-bottom:6px"><span style="color:${c.pass?'#22E5C9':'#FF6B6B'}">${c.pass?'✓':'✗'}</span> <strong>${c.label}</strong> <span class="muted">${c.detail||""}</span></div>`; });
+        (a.title.suggestions||[]).forEach(s=>{ h+=`<div class="issue" style="padding:8px 12px">${s}</div>`; }); h+=`</div>`; }
+      if(a.description){ h+=`<div class="block"><h3>Description <span class="ytgrad">${a.description.score||0}</span></h3>`; (a.description.suggestions||[]).forEach(s=>h+=`<div class="issue" style="padding:8px 12px">${s}</div>`); h+=`</div>`; }
+      if(a.market){ h+=`<div class="block"><h3>Market</h3><div class="muted" style="font-size:14px">Est. views: <strong>${a.market.estimatedViews||"—"}</strong> · Best: <strong>${a.market.bestTime||"—"}</strong></div>${(a.market.countries||[]).map(c=>`<span class="chip2">${c.flag||""} ${c.name||""} ${c.cpm||""}</span>`).join("")}</div>`; }
     }
-
-    if (a.title){
-      h += `<div class="block"><h3>Title <span class="ytgrad">${a.title.score||0}</span></h3>`;
-      (a.title.checks||[]).forEach(c=>{
-        h += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:14px"><span style="color:${c.pass?'#22E5C9':'#FF6B6B'}">${c.pass?'✓':'✗'}</span><strong>${c.label}</strong> <span class="muted">${c.detail||""}</span></div>`;
-      });
-      if(a.title.suggestions&&a.title.suggestions.length){
-        h += `<div style="margin-top:10px"><div class="mono muted" style="font-size:12px;margin-bottom:6px">SUGGESTED TITLES</div>`;
-        a.title.suggestions.forEach(s=>{ h += `<div class="issue" style="padding:8px 12px">${s}</div>`; });
-        h += `</div>`;
-      }
-      h += `</div>`;
+    else if(mode==="trends"){
+      h+=`<div class="score-row block">${ring(a.trendScore)}<div><div style="font-family:var(--font-display);font-weight:700;font-size:18px">${a.niche||"Niche"} · ${a.trendScore||0}/100</div><div class="muted" style="font-size:14px;margin-top:4px">${a.summary||""}</div></div></div>`;
+      if(a.formats){ h+=`<div class="block"><h3>Trending formats</h3>`; a.formats.forEach(f=>h+=`<div class="issue"><strong>${f.name||""}</strong><div style="font-size:14px;margin-top:3px" class="muted">${f.why||""}</div></div>`); h+=`</div>`; }
+      if(a.hooks){ h+=`<div class="block"><h3>Ready hooks (first 3s)</h3>`; a.hooks.forEach(x=>h+=`<div class="issue" style="padding:8px 12px">"${x}"</div>`); h+=`</div>`; }
+      if(a.hashtags){ h+=`<div class="block"><h3>SEO hashtags</h3>${tags(a.hashtags)}</div>`; }
+      h+=`<div class="block"><h3>Tips</h3><div class="muted" style="font-size:14px">Length: <strong>${a.bestLength||"—"}</strong> · Best time: <strong>${a.bestTime||"—"}</strong></div>${(a.postingTips||[]).map(t=>`<div class="issue" style="padding:8px 12px">${t}</div>`).join("")}</div>`;
     }
-
-    if (a.description){
-      h += `<div class="block"><h3>Description <span class="ytgrad">${a.description.score||0}</span></h3>`;
-      (a.description.suggestions||[]).forEach(s=>{ h += `<div class="issue" style="padding:8px 12px">${s}</div>`; });
-      h += `</div>`;
+    else { // viral
+      h+=`<div class="score-row block">${ring(a.viralScore)}<div><div style="font-family:var(--font-display);font-weight:700;font-size:18px">Viral hook ${a.viralScore||0}/100</div><div class="muted" style="font-size:14px;margin-top:4px">${a.verdict||""}</div></div></div>`;
+      if(a.hookBreakdown){ h+=`<div class="block"><h3>First 3 seconds</h3>`; a.hookBreakdown.forEach(b=>h+=`<div class="issue"><strong class="ytgrad">${b.t||""}</strong><div style="font-size:14px;margin-top:3px">${b.msg||""}</div></div>`); h+=`</div>`; }
+      if(a.fixes){ h+=`<div class="block"><h3>Fix the hook</h3>`; a.fixes.forEach(f=>h+=`<div class="issue"><span class="chip2 priority-${f.priority||'medium'}">${f.priority||''}</span><div style="font-size:14px;margin-top:5px">${f.msg||""}</div></div>`); h+=`</div>`; }
+      if(a.caption){ h+=`<div class="block"><h3>Caption</h3><div class="issue" style="padding:10px 12px">${a.caption}</div></div>`; }
+      if(a.hashtags){ h+=`<div class="block"><h3>SEO hashtags (match your title)</h3>${tags(a.hashtags)}</div>`; }
     }
-
-    if (a.market){
-      h += `<div class="block"><h3>Market</h3><div class="muted" style="font-size:14px">Est. views: <strong>${a.market.estimatedViews||"—"}</strong> · Best time: <strong>${a.market.bestTime||"—"}</strong></div>`;
-      (a.market.countries||[]).forEach(c=>{ h += `<span class="chip2" style="margin:6px 6px 0 0">${c.flag||""} ${c.name||""} ${c.cpm||""}</span>`; });
-      h += `</div>`;
-    }
-
-    r.innerHTML = h;
+    r.innerHTML=h;
   }
 })();
 </script>
